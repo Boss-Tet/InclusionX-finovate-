@@ -1,17 +1,17 @@
-import { generateChatResponse, translateText } from '../../providers/gemini';
+import { generateChatResponse, translateText } from '../../providers/groq';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
 // Manually load .env.local for this standalone script
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
-async function testGemini() {
+async function testGroq() {
   console.log('--------------------------------------------------');
-  console.log('🤖 Testing Gemini Chat Generation...');
+  console.log('🤖 Testing Groq (Llama 3) Chat Generation...');
   console.log('--------------------------------------------------');
   
-  if (!process.env.GEMINI_API_KEY) {
-    console.error('❌ GEMINI_API_KEY is not defined in .env.local');
+  if (!process.env.GROQ_API_KEY) {
+    console.error('❌ GROQ_API_KEY is not defined in .env.local');
     process.exit(1);
   }
   
@@ -21,7 +21,7 @@ async function testGemini() {
 
   if (chatResult.success) {
     console.log('✅ Chat Response generated successfully!\n');
-    console.log(`🤖 Gemini says:\n"${chatResult.text}"\n`);
+    console.log(`🤖 Llama 3 (via Groq) says:\n"${chatResult.text}"\n`);
   } else {
     console.error('❌ Failed to generate chat response.', chatResult.error);
   }
@@ -43,4 +43,4 @@ async function testGemini() {
   console.log('--------------------------------------------------');
 }
 
-testGemini();
+testGroq();
