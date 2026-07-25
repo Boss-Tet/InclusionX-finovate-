@@ -20,11 +20,11 @@ import { RepayLoanInput } from '@/lib/validations/loans';
 import { ApiResponse } from '@/types/financial';
 import { LOAN_RULES } from '@/config/loanRules';
 
-interface HandleRepayLoanArgs extends RepayLoanInput {
+type HandleRepayLoanArgs = RepayLoanInput & {
   loanId: string;
   /** GroupMember.id of the caller — must be the loan owner */
   callerMemberId: string;
-}
+};
 
 export async function handleRepayLoan(
   args: HandleRepayLoanArgs

@@ -13,9 +13,9 @@ import { createWithdrawalRequest } from '@/services/withdrawals/createWithdrawal
 import { RequestWithdrawalInput } from '@/lib/validations/withdrawals';
 import { ApiResponse, WithdrawalRequestRecord } from '@/types/financial';
 
-interface HandleRequestWithdrawalArgs extends RequestWithdrawalInput {
+type HandleRequestWithdrawalArgs = RequestWithdrawalInput & {
   callerMemberId: string; // GroupMember.id — must match memberId
-}
+};
 
 export async function handleRequestWithdrawal(
   args: HandleRequestWithdrawalArgs

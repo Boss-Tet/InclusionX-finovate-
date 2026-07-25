@@ -15,9 +15,9 @@ import { LOAN_RULES } from '@/config/loanRules';
 import { RequestLoanInput } from '@/lib/validations/loans';
 import { ApiResponse, LoanRecord } from '@/types/financial';
 
-interface HandleRequestLoanArgs extends RequestLoanInput {
+type HandleRequestLoanArgs = RequestLoanInput & {
   callerMemberId: string; // GroupMember.id of the requesting member
-}
+};
 
 export async function handleRequestLoan(
   args: HandleRequestLoanArgs

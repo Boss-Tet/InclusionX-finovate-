@@ -17,11 +17,11 @@ import { saveHealthScore } from '@/services/healthScore/saveHealthScore';
 import { DisburseLoanInput } from '@/lib/validations/loans';
 import { ApiResponse, LoanRecord } from '@/types/financial';
 
-interface HandleDisburseLoanArgs extends DisburseLoanInput {
+type HandleDisburseLoanArgs = DisburseLoanInput & {
   loanId: string;
   /** GroupMember.roleInGroup — must be GroupRole.TREASURER (NOT User.platformRole) */
   callerGroupRole: string;
-}
+};
 
 export async function handleDisburseLoan(
   args: HandleDisburseLoanArgs
