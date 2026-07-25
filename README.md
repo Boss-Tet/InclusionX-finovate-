@@ -39,12 +39,12 @@ eligible for formal credit. Access is provided through a web app and a USSD/SMS 
 
 ## Technologies Used
 
-| Layer | Technology |
+| Layer | Technology | Details |
 |---|---|
-| Framework | Next.js (React) + TypeScript |
-| Styling | Tailwind CSS |
-| Database | Neon (Serverless PostgreSQL) |
-| ORM | Prisma |
+| **Framework** | Next.js (React) + TypeScript |
+| **Styling** | Tailwind CSS |
+| **Database** | Neon (Serverless PostgreSQL) — *Pooled connection for App, Direct connection for Migrations* |
+| **ORM** | Prisma v6 (with `lib/db.ts` singleton) |
 | Hosting | Vercel |
 | SMS / USSD | Africa's Talking |
 | Payments | PayChangu |
@@ -332,19 +332,40 @@ npm install
 
 # 3. Set up environment variables
 cp .env.example .env.local
-# then open .env.local and fill in your Neon, Africa's Talking, PayChangu, Gemini, and Cloudinary credentials
+# Open .env.local and fill in your Neon, Africa's Talking, PayChangu, Gemini, and Cloudinary credentials
 
-# 4. Push the Prisma schema to your Neon database
-npx prisma migrate dev
+# 4. Set up Prisma and Neon Database
+# Run these commands to push the database schema directly to Neon
+npx prisma db push --accept-data-loss
+npx prisma generate
 
-# 5. Seed demo data
-npx ts-node scripts/seed.ts
-
-# 6. Start the dev server
+# 5. Start the dev server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## Using the Database (Backend Team)
+
+We use **Neon** (a serverless PostgreSQL provider) and **Prisma** (our ORM). 
+
+**Do NOT create new database connections in your files.** The connection is pooled and managed centrally to prevent overwhelming the Neon serverless instance.
+
+To read or write from the database in your Controllers, API routes, or Services, simply import the Prisma singleton from `lib/db.ts`:
+
+```typescript
+import { db } from "@/lib/db";
+
+export async function createNewGroup(name: string) {
+  // Use `db` to interact with Neon
+  const group = await db.vslaGroup.create({
+    data: { name, ... }
+  });
+  return group;
+}
+```
 
 ---
 
