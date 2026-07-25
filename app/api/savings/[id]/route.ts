@@ -21,13 +21,14 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const callerRole = req.headers.get('x-caller-role') ?? '';
+    // x-caller-group-role → GroupMember.roleInGroup (must be CHAIRPERSON)
+    const callerGroupRole = req.headers.get('x-caller-group-role') ?? '';
     const callerUserId = req.headers.get('x-caller-user-id') ?? '';
 
     const result = await handleApproveContribution({
       contributionId: id,
       action: parsed.data.action,
-      callerRole,
+      callerGroupRole,
       callerUserId,
     });
 

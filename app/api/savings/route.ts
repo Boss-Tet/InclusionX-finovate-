@@ -20,11 +20,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: parsed.error.flatten() }, { status: 400 });
     }
 
-    // TODO (Orama): replace with real session extraction from middleware context
-    const callerRole = req.headers.get('x-caller-role') ?? '';
+    // x-caller-group-role → GroupMember.roleInGroup (e.g. TREASURER)
+    // x-caller-user-id    → User.id of the caller
+    const callerGroupRole = req.headers.get('x-caller-group-role') ?? '';
     const callerUserId = req.headers.get('x-caller-user-id') ?? '';
 
-    const result = await handleCreateContribution({ ...parsed.data, callerRole, callerUserId });
+    const result = await handleCreateContribution({ ...parsed.data, callerGroupRole, callerUserId });
     return NextResponse.json(result, { status: result.success ? 201 : 403 });
   } catch (err) {
     console.error('[POST /api/savings]', err);

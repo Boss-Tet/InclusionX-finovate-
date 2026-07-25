@@ -17,7 +17,8 @@ import { LOAN_RULES } from '@/config/loanRules';
 
 interface HandleCastLoanVoteArgs extends CastLoanVoteInput {
   loanId: string;
-  callerGroupRole: string; // GroupMember.roleInGroup
+  /** GroupMember.roleInGroup — must be one of GroupRole CHAIRPERSON/TREASURER/SECRETARY */
+  callerGroupRole: string;
 }
 
 export async function handleCastLoanVote(
@@ -25,11 +26,11 @@ export async function handleCastLoanVote(
 ): Promise<ApiResponse<LoanVoteRecord>> {
   const { loanId, voterId, decision, note, callerGroupRole } = args;
 
-  // 1. Role guard — only the three officer roles may vote on loans.
+  // Group-role guard — reads GroupMember.roleInGroup, NOT User.platformRole.
   if (!(LOAN_RULES.requiredVoterRoles as readonly string[]).includes(callerGroupRole)) {
     return {
       success: false,
-      error: 'Only Chairperson, Treasurer, or Secretary can vote on loan requests.',
+      error: 'Only a group Chairperson, Treasurer, or Secretary can vote on loan requests.',
       code: 'FORBIDDEN',
     };
   }

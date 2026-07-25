@@ -18,16 +18,17 @@ import { ApiResponse, LoanRecord } from '@/types/financial';
 
 interface HandleDisburseLoanArgs extends DisburseLoanInput {
   loanId: string;
-  callerRole: string; // GroupMember.roleInGroup — must be TREASURER
+  /** GroupMember.roleInGroup — must be GroupRole.TREASURER (NOT User.platformRole) */
+  callerGroupRole: string;
 }
 
 export async function handleDisburseLoan(
   args: HandleDisburseLoanArgs
 ): Promise<ApiResponse<LoanRecord>> {
-  const { loanId, method, paychanguRef, callerRole } = args;
+  const { loanId, method, paychanguRef, callerGroupRole } = args;
 
-  // Role guard — Treasurer disburses.
-  if (callerRole !== 'TREASURER') {
+  // Group-role guard — reads GroupMember.roleInGroup, not User.platformRole.
+  if (callerGroupRole !== 'TREASURER') {
     return { success: false, error: 'Only a Treasurer can disburse a loan.', code: 'FORBIDDEN' };
   }
 

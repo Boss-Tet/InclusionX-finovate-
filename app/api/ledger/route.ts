@@ -18,9 +18,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const callerRole = req.headers.get('x-caller-role') ?? '';
+    // Two separate headers — GroupRole and PlatformRole are distinct role systems.
+    // x-caller-group-role    → GroupMember.roleInGroup (TREASURER/CHAIRPERSON/SECRETARY)
+    // x-caller-platform-role → User.platformRole      (BANK_OFFICER/ADMIN)
+    const callerGroupRole = req.headers.get('x-caller-group-role') ?? '';
+    const callerPlatformRole = req.headers.get('x-caller-platform-role') ?? '';
 
-    const result = await handleGetLedger({ ...parsed.data, callerRole });
+    const result = await handleGetLedger({ ...parsed.data, callerGroupRole, callerPlatformRole });
     const status = result.success ? 200 : result.code === 'FORBIDDEN' ? 403 : 400;
     return NextResponse.json(result, { status });
   } catch (err) {

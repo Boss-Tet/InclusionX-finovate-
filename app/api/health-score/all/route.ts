@@ -11,8 +11,10 @@ import { handleGetAllScores } from '@/controllers/healthScore/handleGetAllScores
 
 export async function GET(req: NextRequest) {
   try {
-    const callerRole = req.headers.get('x-caller-role') ?? '';
-    const result = await handleGetAllScores(callerRole);
+    // x-caller-platform-role → User.platformRole (BANK_OFFICER / ADMIN)
+    // This is a system-wide endpoint — group role is irrelevant here.
+    const callerPlatformRole = req.headers.get('x-caller-platform-role') ?? '';
+    const result = await handleGetAllScores(callerPlatformRole);
     const status = result.success ? 200 : result.code === 'FORBIDDEN' ? 403 : 400;
     return NextResponse.json(result, { status });
   } catch (err) {

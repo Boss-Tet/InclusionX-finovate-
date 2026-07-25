@@ -21,9 +21,10 @@ export async function POST(
       return NextResponse.json({ success: false, error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const callerRole = req.headers.get('x-caller-group-role') ?? '';
+    // x-caller-group-role → GroupMember.roleInGroup (must be TREASURER)
+    const callerGroupRole = req.headers.get('x-caller-group-role') ?? '';
 
-    const result = await handleDisburseLoan({ loanId, ...parsed.data, callerRole });
+    const result = await handleDisburseLoan({ loanId, ...parsed.data, callerGroupRole });
     const status = result.success ? 200 : result.code === 'FORBIDDEN' ? 403 : result.code === 'NOT_FOUND' ? 404 : 400;
     return NextResponse.json(result, { status });
   } catch (err) {

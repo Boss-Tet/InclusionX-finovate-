@@ -2,7 +2,8 @@
 // controllers/savings/handleApproveContribution.ts
 // Owned by: Jabari (Financial Logic)
 //
-// Business rule: Only a CHAIRPERSON may approve/reject a contribution.
+// Business rule: Only GroupRole.CHAIRPERSON may approve/reject a contribution.
+// Guard reads GroupMember.roleInGroup — NOT User.platformRole.
 // On APPROVE → write ledger entry FIRST, then flip status.
 // Triggers a Health Score recompute.
 // =============================================================================
@@ -17,7 +18,8 @@ import { ApiResponse, ContributionRecord } from '@/types/financial';
 interface HandleApproveContributionArgs {
   contributionId: string;
   action: 'APPROVE' | 'REJECT';
-  callerRole: string;
+  /** GroupMember.roleInGroup — must be GroupRole.CHAIRPERSON */
+  callerGroupRole: string;
   callerUserId: string;
   reason?: string;
 }
@@ -25,13 +27,13 @@ interface HandleApproveContributionArgs {
 export async function handleApproveContribution(
   args: HandleApproveContributionArgs
 ): Promise<ApiResponse<ContributionRecord>> {
-  const { contributionId, action, callerRole, callerUserId } = args;
+  const { contributionId, action, callerGroupRole, callerUserId } = args;
 
-  // Role guard.
-  if (callerRole !== 'CHAIRPERSON') {
+  // Group-role guard — reads GroupMember.roleInGroup, not User.platformRole.
+  if (callerGroupRole !== 'CHAIRPERSON') {
     return {
       success: false,
-      error: 'Only a Chairperson can approve contributions.',
+      error: 'Only a group Chairperson can approve contributions.',
       code: 'FORBIDDEN',
     };
   }
