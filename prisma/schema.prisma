@@ -1,0 +1,705 @@
+// =============================================================================
+// prisma/schema.prisma
+// VSLA Connect — Database Model Layer
+// Owned by: Arthony (Database & Third-Party Integration Lead)
+//
+// What you will find here:
+//   • Every table the application reads from and writes to
+//   • Enums matching the SRS Section 4 functional requirements
+//   • A mix of UUID primary keys (security-sensitive / externally referenced
+//     entities) and CUID primary keys (high-volume append-only internal records)
+//   • Idempotency keys on every payment-touching record (PayChangu dedup)
+//   • Session management, 2FA, and password-reset OTP models
+//   • Append-only ledger — no UPDATE or DELETE should ever touch ledger_entries
+//   • PaymentTransaction table decouples payment-provider state from
+//     business state so a failed payment never corrupts the ledger
+//
+// Convention: all monetary columns are stored in TAMBALA (integer).
+//             1 MWK = 100 tambala — no floats near money, ever.
+//
+// See: docs/SRS.md Section 5 (Database Schema) for full rationale.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled URL — used by Prisma Client at runtime
+  url       = env("DATABASE_URL")
+  // Direct URL — used by Prisma Migrate only (bypasses PgBouncer)
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum PlatformRole {
+  MEMBER
+  CHAIRPERSON
+  TREASURER
+  SECRETARY
+  BANK_OFFICER
+  ADMIN
+}
+
+enum GroupRole {
+  MEMBER
+  CHAIRPERSON
+  TREASURER
+  SECRETARY
+}
+
+enum MembershipStatus {
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+enum GroupStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum CycleFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum ContributionMethod {
+  CASH
+  MOBILE_MONEY
+  CARD
+}
+
+enum ContributionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISBURSED
+  REPAYING
+  REPAID
+  OVERDUE
+}
+
+enum VoteDecision {
+  APPROVE
+  REJECT
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID_OUT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+}
+
+enum LedgerEntryType {
+  CONTRIBUTION
+  LOAN_DISBURSEMENT
+  LOAN_REPAYMENT
+  WITHDRAWAL
+  REVERSAL
+  MEMBER_SUSPENDED  // governance events that affect the ledger narrative
+  MEMBER_REMOVED
+}
+
+enum LedgerDirection {
+  CREDIT // money comes into the group pool
+  DEBIT  // money leaves the group pool
+}
+
+enum NotificationChannel {
+  IN_APP
+  SMS
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum PaymentProvider {
+  PAYCHANGU
+}
+
+enum PaymentEntityType {
+  CONTRIBUTION
+  LOAN_DISBURSEMENT
+  LOAN_REPAYMENT
+  WITHDRAWAL
+}
+
+enum PaymentStatus {
+  INITIATED
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+// =============================================================================
+// USERS & AUTH
+// UUID primary key — prevents ID enumeration in API responses / URLs
+// =============================================================================
+
+model User {
+  id           String       @id @default(uuid()) @db.Uuid
+  phoneNumber  String       @unique @db.VarChar(20)
+  email        String?      @unique @db.VarChar(255) // optional, for email notifications
+  passwordHash String       // bcrypt hash — never store raw password
+  fullName     String       @db.VarChar(255)
+  avatarUrl    String?      // Cloudinary URL
+  platformRole PlatformRole @default(MEMBER)
+  preferredLang String      @default("en") @db.VarChar(5) // "en" | "ny" (Chichewa)
+  nationalId   String?      @unique @db.VarChar(50) // KYC — optional for MVP
+  dateOfBirth  DateTime?    @db.Date
+
+  // ── Account status ──────────────────────────────────────────────────────────
+  isActive          Boolean  @default(true)
+  isPhoneVerified   Boolean  @default(false)
+  isEmailVerified   Boolean  @default(false)
+
+  // ── Brute-force protection ───────────────────────────────────────────────────
+  failedLoginAttempts Int      @default(0)
+  lockedUntil         DateTime? // null = not locked
+
+  // ── Audit trail ─────────────────────────────────────────────────────────────
+  lastLoginAt  DateTime?
+  lastLoginIp  String?   @db.VarChar(45) // supports IPv6 (max 45 chars)
+
+  // ── 2FA (TOTP — Google Authenticator compatible) ─────────────────────────────
+  twoFactorEnabled     Boolean  @default(false)
+  twoFactorSecret      String?  // base32 TOTP secret (encrypt at rest in production)
+  twoFactorBackupCodes String[] // bcrypt-hashed one-time backup codes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ── Relations ───────────────────────────────────────────────────────────────
+  sessions              Session[]
+  passwordResetOtps     PasswordResetOtp[]
+  groupsChaired         VslaGroup[]        @relation("Chairperson")
+  groupMemberships      GroupMember[]      @relation("GroupMemberUser")
+  membersInvited        GroupMember[]      @relation("InvitedBy")
+  contributionsRecorded Contribution[]     @relation("RecordedBy")
+  contributionsApproved Contribution[]     @relation("ApprovedBy")
+  meetingsRecorded      Meeting[]
+  notifications         Notification[]
+  chatMessagesSent      ChatMessage[]
+  aiMessages            AiMessage[]
+  bankAnnotations       BankAnnotation[]
+
+  @@index([phoneNumber])
+  @@index([platformRole])
+  @@index([isActive, lockedUntil])
+  @@map("users")
+}
+
+// =============================================================================
+// SESSIONS — custom session store (complement to NextAuth JWT if used)
+// CUID — high volume, internal, time-ordered
+// =============================================================================
+
+model Session {
+  id        String    @id @default(cuid())
+  userId    String    @db.Uuid
+  tokenHash String    @unique @db.VarChar(64) // SHA-256 hex of the bearer token
+  expiresAt DateTime
+  ipAddress String?   @db.VarChar(45)
+  userAgent String?   @db.VarChar(500)
+  revokedAt DateTime? // null = still valid
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// =============================================================================
+// PASSWORD RESET OTPs
+// CUID — internal, short-lived
+// =============================================================================
+
+model PasswordResetOtp {
+  id         String    @id @default(cuid())
+  userId     String    @db.Uuid
+  otpHash    String    @db.VarChar(64) // SHA-256 of the 6-digit code — never raw
+  expiresAt  DateTime  // short window: 10 minutes
+  consumedAt DateTime? // set when used — prevents replay
+  attempts   Int       @default(0) // lock after 3 wrong guesses
+  ipAddress  String?   @db.VarChar(45) // log origin for audit
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_otps")
+}
+
+// =============================================================================
+// VSLA GROUPS
+// UUID — externally referenced, security-sensitive
+// =============================================================================
+
+model VslaGroup {
+  id                        String         @id @default(uuid()) @db.Uuid
+  name                      String         @db.VarChar(255)
+  description               String?        @db.Text
+  inviteCode                String         @unique @db.VarChar(12) // short, human-typable
+  chairpersonId             String         @db.Uuid
+  contributionAmountTambala Int            // must be > 0, enforced in controller
+  interestRate              Decimal        @db.Decimal(5, 2) // e.g. 10.00 = 10 %
+  loanMultipleCap           Decimal        @default(3.0) @db.Decimal(5, 2)
+  withdrawalQuorumPct       Decimal        @default(50.0) @db.Decimal(5, 2)
+  cycleFrequency            CycleFrequency @default(MONTHLY)
+  meetingLocation           String?        @db.VarChar(500)
+  status                    GroupStatus    @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chairperson        User                @relation("Chairperson", fields: [chairpersonId], references: [id])
+  members            GroupMember[]
+  contributions      Contribution[]
+  loans              Loan[]
+  withdrawalRequests WithdrawalRequest[]
+  meetings           Meeting[]
+  ledgerEntries      LedgerEntry[]
+  healthScores       HealthScore[]
+  bankAnnotations    BankAnnotation[]
+  chatMessages       ChatMessage[]
+
+  @@index([status])
+  @@index([inviteCode])
+  @@index([chairpersonId])
+  @@map("vsla_groups")
+}
+
+// =============================================================================
+// GROUP MEMBERS — junction between User and VslaGroup
+// UUID — referenced by all financial tables
+// =============================================================================
+
+model GroupMember {
+  id          String           @id @default(uuid()) @db.Uuid
+  groupId     String           @db.Uuid
+  userId      String           @db.Uuid
+  roleInGroup GroupRole        @default(MEMBER)
+  status      MembershipStatus @default(ACTIVE)
+  joinDate    DateTime         @default(now()) @db.Date
+  invitedById String?          @db.Uuid // who added this member (audit)
+
+  invitedBy User?     @relation("InvitedBy", fields: [invitedById], references: [id]) // optional soft ref
+  vslaGroup VslaGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User      @relation("GroupMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  contributions      Contribution[]
+  loans              Loan[]
+  loanVotes          LoanVote[]
+  withdrawalRequests WithdrawalRequest[]
+  withdrawalVotes    WithdrawalVote[]
+  attendance         Attendance[]
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@index([status])
+  @@map("group_members")
+}
+
+// =============================================================================
+// CONTRIBUTIONS / SAVINGS
+// UUID — financial record, externally referenceable, written to ledger
+// =============================================================================
+
+model Contribution {
+  id             String             @id @default(uuid()) @db.Uuid
+  groupId        String             @db.Uuid
+  memberId       String             @db.Uuid // GroupMember.id
+  amountTambala  Int
+  method         ContributionMethod
+  status         ContributionStatus @default(PENDING)
+  cyclePeriod    String?            @db.VarChar(7) // "2026-07" — which cycle this covers
+  recordedById   String?            @db.Uuid       // User who logged it (Treasurer)
+  approvedById   String?            @db.Uuid       // User who approved it (Chairperson)
+
+  // ── PayChangu integration ─────────────────────────────────────────────────
+  idempotencyKey String? @unique @db.VarChar(100) // dedup PayChangu webhook replays
+  paychanguRef   String? @db.VarChar(100)
+
+  createdAt DateTime @default(now())
+
+  group      VslaGroup   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  member     GroupMember @relation(fields: [memberId], references: [id])
+  recordedBy User?       @relation("RecordedBy", fields: [recordedById], references: [id])
+  approvedBy User?       @relation("ApprovedBy", fields: [approvedById], references: [id])
+
+  @@index([groupId])
+  @@index([memberId])
+  @@index([status])
+  @@index([cyclePeriod])
+  @@map("contributions")
+}
+
+// =============================================================================
+// LOANS
+// UUID — core financial entity, externally referenced
+// =============================================================================
+
+model Loan {
+  id                  String     @id @default(uuid()) @db.Uuid
+  groupId             String     @db.Uuid
+  memberId            String     @db.Uuid // GroupMember.id
+  principalTambala    Int
+  interestRate        Decimal    @db.Decimal(5, 2)
+  totalDueTambala     Int?       // principal + interest; set on approval
+  amountRepaidTambala Int        @default(0) // running repayment total
+  status              LoanStatus @default(PENDING)
+  rejectionReason     String?    @db.Text
+
+  // ── PayChangu integration ─────────────────────────────────────────────────
+  idempotencyKey String? @unique @db.VarChar(100)
+  paychanguRef   String? @db.VarChar(100) // disbursement reference
+
+  // ── Lifecycle timestamps ──────────────────────────────────────────────────
+  requestedAt DateTime  @default(now())
+  approvedAt  DateTime?
+  disbursedAt DateTime?
+  dueDate     DateTime? @db.Date
+  repaidAt    DateTime? // set when status → REPAID
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group      VslaGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  member     GroupMember    @relation(fields: [memberId], references: [id])
+  votes      LoanVote[]
+  repayments LoanRepayment[]
+
+  @@index([groupId])
+  @@index([memberId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("loans")
+}
+
+// CUID — one vote per voter per loan, high-frequency read
+model LoanVote {
+  id       String       @id @default(cuid())
+  loanId   String       @db.Uuid
+  voterId  String       @db.Uuid // GroupMember.id
+  decision VoteDecision
+  note     String?      @db.Text // optional reason for rejection
+
+  votedAt DateTime @default(now())
+
+  loan  Loan        @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  voter GroupMember @relation(fields: [voterId], references: [id])
+
+  @@unique([loanId, voterId])
+  @@index([loanId])
+  @@map("loan_votes")
+}
+
+// CUID — high-volume append-only; loanId is the foreign key for Health Score
+model LoanRepayment {
+  id             String             @id @default(cuid())
+  loanId         String             @db.Uuid
+  amountTambala  Int
+  method         ContributionMethod
+  idempotencyKey String?            @unique @db.VarChar(100)
+  paychanguRef   String?            @db.VarChar(100)
+
+  paidAt DateTime @default(now())
+
+  loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@index([loanId])
+  @@map("loan_repayments")
+}
+
+// =============================================================================
+// WITHDRAWALS
+// UUID — financial record, externally referenceable, written to ledger
+// =============================================================================
+
+model WithdrawalRequest {
+  id             String           @id @default(uuid()) @db.Uuid
+  groupId        String           @db.Uuid
+  memberId       String           @db.Uuid // GroupMember.id
+  amountTambala  Int
+  reason         String           @db.Text
+  status         WithdrawalStatus @default(PENDING)
+  idempotencyKey String?          @unique @db.VarChar(100)
+  paychanguRef   String?          @db.VarChar(100)
+  paidOutAt      DateTime?        // set when status → PAID_OUT
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group  VslaGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  member GroupMember     @relation(fields: [memberId], references: [id])
+  votes  WithdrawalVote[]
+
+  @@index([groupId])
+  @@index([memberId])
+  @@index([status])
+  @@map("withdrawal_requests")
+}
+
+// CUID — one vote per voter per request
+model WithdrawalVote {
+  id        String       @id @default(cuid())
+  requestId String       @db.Uuid
+  voterId   String       @db.Uuid // GroupMember.id
+  decision  VoteDecision
+  note      String?      @db.Text
+
+  votedAt DateTime @default(now())
+
+  request WithdrawalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  voter   GroupMember       @relation(fields: [voterId], references: [id])
+
+  @@unique([requestId, voterId])
+  @@index([requestId])
+  @@map("withdrawal_votes")
+}
+
+// =============================================================================
+// MEETINGS & ATTENDANCE
+// =============================================================================
+
+// UUID — referenced by Attendance and Health Score engine
+model Meeting {
+  id           String    @id @default(uuid()) @db.Uuid
+  groupId      String    @db.Uuid
+  scheduledAt  DateTime
+  agenda       String?   @db.Text
+  location     String?   @db.VarChar(500)
+  minutes      String?   @db.Text // recorded after the meeting
+  recordedById String?   @db.Uuid // User.id (Secretary)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group      VslaGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  recordedBy User?      @relation(fields: [recordedById], references: [id])
+  attendance Attendance[]
+
+  @@index([groupId])
+  @@index([scheduledAt])
+  @@map("meetings")
+}
+
+// CUID — high-volume, one row per member per meeting; never externally referenced
+model Attendance {
+  id        String          @id @default(cuid())
+  meetingId String          @db.Uuid
+  memberId  String          @db.Uuid // GroupMember.id
+  status    AttendanceStatus
+  note      String?         @db.VarChar(500) // e.g. "Medical leave"
+
+  meeting Meeting     @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  member  GroupMember @relation(fields: [memberId], references: [id])
+
+  @@unique([meetingId, memberId])
+  @@index([meetingId])
+  @@index([memberId])
+  @@map("attendance")
+}
+
+// =============================================================================
+// DIGITAL LEDGER — single source of truth, append-only
+//
+// referenceId is a polymorphic pointer into contributions / loans /
+// loan_repayments / withdrawal_requests depending on entryType.
+// No real FK is possible across that polymorphism; this is an accepted
+// MVP trade-off (SRS Section 5.2).
+//
+// RULE: services/ledger/ is the ONLY layer allowed to INSERT here.
+//       No UPDATE. No DELETE. Corrections = REVERSAL entries only.
+// UUID — core audit trail, externally referenceable by Bank Officer
+// =============================================================================
+
+model LedgerEntry {
+  id             String          @id @default(uuid()) @db.Uuid
+  groupId        String          @db.Uuid
+  entryType      LedgerEntryType
+  referenceId    String          @db.Uuid   // polymorphic FK
+  amountTambala  Int
+  direction      LedgerDirection
+  balanceAfter   Int?            // running group-pool snapshot after this entry
+  reversalOfId   String?         @db.Uuid   // non-null only for REVERSAL entries
+  reason         String?         @db.Text   // required for REVERSAL entries
+
+  createdAt DateTime @default(now())
+
+  group      VslaGroup    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  reversalOf LedgerEntry? @relation("Reversals", fields: [reversalOfId], references: [id])
+  reversals  LedgerEntry[] @relation("Reversals")
+
+  @@index([groupId])
+  @@index([referenceId])
+  @@index([groupId, createdAt(sort: Desc)])
+  @@index([entryType])
+  @@map("ledger_entries")
+}
+
+// =============================================================================
+// PAYMENT TRANSACTIONS
+// Decouples PayChangu payment-provider state from business state.
+// A failed payment here never corrupts ledger_entries.
+// CUID — internal, high-volume webhook callbacks
+// =============================================================================
+
+model PaymentTransaction {
+  id              String            @id @default(cuid())
+  provider        PaymentProvider   @default(PAYCHANGU)
+  providerRef     String?           @unique @db.VarChar(100) // PayChangu txn ID
+  idempotencyKey  String            @unique @db.VarChar(100) // our own dedup key
+  entityType      PaymentEntityType
+  entityId        String            @db.Uuid  // contribution / loan / withdrawal ID
+  amountTambala   Int
+  status          PaymentStatus     @default(INITIATED)
+  providerPayload Json?             // raw webhook payload for debugging
+  failureReason   String?           @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([entityId])
+  @@index([providerRef])
+  @@index([status])
+  @@map("payment_transactions")
+}
+
+// =============================================================================
+// HEALTH SCORE — computed snapshots per group
+// CUID — internal, append-only snapshots
+// =============================================================================
+
+model HealthScore {
+  id                  String  @id @default(cuid())
+  groupId             String  @db.Uuid
+  score               Int     // 0–100 composite
+  savingsComponent    Decimal @db.Decimal(5, 2)
+  repaymentComponent  Decimal @db.Decimal(5, 2)
+  attendanceComponent Decimal @db.Decimal(5, 2)
+  governanceComponent Decimal @db.Decimal(5, 2)
+
+  computedAt DateTime @default(now())
+
+  group VslaGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, computedAt(sort: Desc)])
+  @@map("health_scores")
+}
+
+// Bank Officer annotations on a group — read-only flag, never triggers actions
+// CUID — internal
+model BankAnnotation {
+  id            String   @id @default(cuid())
+  groupId       String   @db.Uuid
+  bankOfficerId String   @db.Uuid
+  note          String   @db.Text
+  isEligible    Boolean? // officer's formal eligibility flag (nullable = not yet assessed)
+
+  createdAt DateTime @default(now())
+
+  group       VslaGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  bankOfficer User      @relation(fields: [bankOfficerId], references: [id])
+
+  @@index([groupId])
+  @@map("bank_annotations")
+}
+
+// =============================================================================
+// NOTIFICATIONS
+// CUID — high-volume, append-only, never externally referenced
+// =============================================================================
+
+model Notification {
+  id      String              @id @default(cuid())
+  userId  String              @db.Uuid
+  channel NotificationChannel
+  title   String              @db.VarChar(255)
+  message String              @db.Text
+  status  NotificationStatus  @default(PENDING)
+  readAt  DateTime?
+  sentAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// =============================================================================
+// IN-APP MEMBER CHAT (FR-CHAT) — separate from AI chatbot
+// CUID — very high volume, time-ordered, append-only
+// =============================================================================
+
+model ChatMessage {
+  id       String @id @default(cuid())
+  groupId  String @db.Uuid
+  senderId String @db.Uuid
+
+  body   String   @db.Text
+  sentAt DateTime @default(now())
+
+  group  VslaGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  sender User      @relation(fields: [senderId], references: [id])
+
+  @@index([groupId, sentAt(sort: Desc)])
+  @@map("chat_messages")
+}
+
+// =============================================================================
+// AI CHATBOT CONVERSATION LOG (FR-AI) — separate from member chat
+// Keeps the member ↔ AI thread isolated from member ↔ member threads.
+// CUID — high-volume, time-ordered, append-only
+// =============================================================================
+
+model AiMessage {
+  id      String @id @default(cuid())
+  userId  String @db.Uuid
+  role    String @db.VarChar(10) // "user" | "assistant"
+  content String @db.Text
+  lang    String @default("en") @db.VarChar(5) // "en" | "ny"
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("ai_messages")
+}
