@@ -22,22 +22,30 @@ import { LOAN_RULES } from '@/config/loanRules';
 
 interface HandleRepayLoanArgs extends RepayLoanInput {
   loanId: string;
+  /** GroupMember.id of the caller — must be the loan owner */
+  callerMemberId: string;
 }
 
 export async function handleRepayLoan(
   args: HandleRepayLoanArgs
 ): Promise<ApiResponse<{ loanStatus: string; remainingDueTambala: number }>> {
-  const { loanId, amountTambala, method, paychanguRef, idempotencyKey } = args;
+  const { loanId, amountTambala, method, paychanguRef, idempotencyKey, callerMemberId } = args;
 
   // Validate OUTSIDE transaction (no side effects).
   const loan = await db.loan.findUnique({
     where: { id: loanId },
     select: {
-      id: true, status: true, groupId: true,
+      id: true, status: true, groupId: true, memberId: true,
       totalDueTambala: true, amountRepaidTambala: true, principalTambala: true,
     },
   });
   if (!loan) return { success: false, error: 'Loan not found.', code: 'NOT_FOUND' };
+
+  // Security: only the loan owner may submit repayments.
+  if (loan.memberId !== callerMemberId) {
+    return { success: false, error: 'You can only repay your own loan.', code: 'FORBIDDEN' };
+  }
+
   if (!['DISBURSED', 'REPAYING'].includes(loan.status)) {
     return { success: false, error: `Cannot repay a loan with status ${loan.status}.`, code: 'INVALID_STATE' };
   }
