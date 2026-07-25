@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import db from "@/lib/db";
 
 export async function resolveTicket(ticketId: string) {
   return await db.supportTicket.update({
