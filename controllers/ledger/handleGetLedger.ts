@@ -17,12 +17,12 @@ import { ApiResponse, PaginatedLedger } from '@/types/financial';
 const GROUP_ROLES_ALLOWED = ['TREASURER', 'CHAIRPERSON', 'SECRETARY'] as const;
 const PLATFORM_ROLES_ALLOWED = ['BANK_OFFICER', 'ADMIN'] as const;
 
-interface HandleGetLedgerArgs extends GetLedgerQuery {
+type HandleGetLedgerArgs = GetLedgerQuery & {
   /** GroupMember.roleInGroup — one of GroupRole */
   callerGroupRole: string;
   /** User.platformRole — one of PlatformRole */
   callerPlatformRole: string;
-}
+};
 
 export async function handleGetLedger(
   args: HandleGetLedgerArgs

@@ -39,7 +39,7 @@ export async function sendFanOutNotification({
   if (!user) return; // User not found, abort quietly
 
   // 2. Dispatch In-App
-  if (channels.includes('IN_APP') && user.notifyInApp) {
+  if (channels.includes('IN_APP') && user.notifyInApp !== false) {
     await db.notification.create({
       data: {
         userId,
@@ -53,7 +53,7 @@ export async function sendFanOutNotification({
   }
 
   // 3. Dispatch SMS
-  if (channels.includes('SMS') && user.notifySms) {
+  if (channels.includes('SMS') && user.notifySms !== false) {
     // Log the intent to send
     const smsLog = await db.notification.create({
       data: {
@@ -84,7 +84,7 @@ export async function sendFanOutNotification({
   }
 
   // 4. Dispatch Email
-  if (channels.includes('EMAIL') && user.notifyEmail && user.email) {
+  if (channels.includes('EMAIL') && user.notifyEmail !== false && user.email) {
     const emailLog = await db.notification.create({
       data: {
         userId,
