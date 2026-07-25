@@ -8,9 +8,9 @@ import db from '@/lib/db';
 import { CreateContributionInput } from '@/lib/validations/savings';
 import { ContributionRecord } from '@/types/financial';
 
-interface CreateContributionArgs extends CreateContributionInput {
+type CreateContributionArgs = CreateContributionInput & {
   recordedById: string; // User.id of the Treasurer logging this
-}
+};
 
 /**
  * Inserts a new contribution record in PENDING status.

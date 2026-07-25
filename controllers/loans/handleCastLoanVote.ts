@@ -15,11 +15,11 @@ import { CastLoanVoteInput } from '@/lib/validations/loans';
 import { ApiResponse, LoanVoteRecord } from '@/types/financial';
 import { LOAN_RULES } from '@/config/loanRules';
 
-interface HandleCastLoanVoteArgs extends CastLoanVoteInput {
+type HandleCastLoanVoteArgs = CastLoanVoteInput & {
   loanId: string;
   /** GroupMember.roleInGroup — must be one of GroupRole CHAIRPERSON/TREASURER/SECRETARY */
   callerGroupRole: string;
-}
+};
 
 export async function handleCastLoanVote(
   args: HandleCastLoanVoteArgs

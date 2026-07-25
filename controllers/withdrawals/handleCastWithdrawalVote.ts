@@ -14,9 +14,9 @@ import { castWithdrawalVote } from '@/services/withdrawals/castWithdrawalVote';
 import { CastWithdrawalVoteInput } from '@/lib/validations/withdrawals';
 import { ApiResponse, WithdrawalVoteRecord } from '@/types/financial';
 
-interface HandleCastWithdrawalVoteArgs extends CastWithdrawalVoteInput {
+type HandleCastWithdrawalVoteArgs = CastWithdrawalVoteInput & {
   requestId: string;
-}
+};
 
 export async function handleCastWithdrawalVote(
   args: HandleCastWithdrawalVoteArgs
