@@ -44,3 +44,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# VSLA Connect SRS document and jabari backend task tracker files
+VSLA Connect - SRS v1.1-2.docx
+JABARI_TASK_TRACKER.md
+JABARI_BACKEND_TASKS.md
+JABARI_TEAM_NOTE.md
+
+# Automated type check script push
+/scripts/git
