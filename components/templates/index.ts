@@ -1,8 +1,8 @@
-export * from './AuthShell';
-export * from './DashboardShell';
-export * from './MemberShell';
-export * from './ChairpersonShell';
-export * from './TreasurerShell';
-export * from './SecretaryShell';
-export * from './BankOfficerShell';
-export * from './AdminShell';
+export { AuthShell } from './AuthShell';
+export { DashboardShell } from './DashboardShell';
+export { MemberShell } from './MemberShell';
+export { ChairpersonShell } from './ChairpersonShell';
+export { TreasurerShell } from './TreasurerShell';
+export { SecretaryShell } from './SecretaryShell';
+export { BankOfficerShell } from './BankOfficerShell';
+export { AdminShell } from './AdminShell';
