@@ -3,13 +3,14 @@
 // Owned by: Jabari (Financial Logic)
 //
 // Business rules:
-//   1. Loan status must be APPROVED (not DISBURSED, PENDING, etc.)
-//   2. Write ledger DEBIT entry first, then flip status to DISBURSED
+//   1. Loan status must be APPROVED
+//   2. Write ledger DEBIT entry + flip to DISBURSED atomically (FIX BUG-03)
 //   3. Trigger Health Score recompute (fire-and-forget)
+//
+// FIX BUG-03: ledger DEBIT + status flip now in ONE db.$transaction.
 // =============================================================================
 
 import db from '@/lib/db';
-import { disburseLoan } from '@/services/loans/disburseLoan';
 import { appendLedgerEntry } from '@/services/ledger/appendLedgerEntry';
 import { computeHealthScore } from '@/services/healthScore/computeHealthScore';
 import { saveHealthScore } from '@/services/healthScore/saveHealthScore';
@@ -32,32 +33,47 @@ export async function handleDisburseLoan(
     return { success: false, error: 'Only a Treasurer can disburse a loan.', code: 'FORBIDDEN' };
   }
 
-  // Load loan and validate status.
+  // Validate OUTSIDE transaction (no side effects).
   const loan = await db.loan.findUnique({
     where: { id: loanId },
     select: { id: true, status: true, groupId: true, principalTambala: true },
   });
   if (!loan) return { success: false, error: 'Loan not found.', code: 'NOT_FOUND' };
   if (loan.status !== 'APPROVED') {
-    return { success: false, error: `Loan must be APPROVED before disbursement. Current status: ${loan.status}.`, code: 'INVALID_STATE' };
+    return {
+      success: false,
+      error: `Loan must be APPROVED before disbursement. Current status: ${loan.status}.`,
+      code: 'INVALID_STATE',
+    };
   }
 
-  // Write DEBIT ledger entry first.
-  await appendLedgerEntry({
-    groupId: loan.groupId,
-    entryType: 'LOAN_DISBURSEMENT',
-    referenceId: loan.id,
-    amountTambala: loan.principalTambala,
-    direction: 'DEBIT',
-  });
+  // BUG-03 FIX: ledger DEBIT + status flip atomically.
+  const updated = await db.$transaction(async (tx) => {
+    await appendLedgerEntry(
+      {
+        groupId: loan.groupId,
+        entryType: 'LOAN_DISBURSEMENT',
+        referenceId: loan.id,
+        amountTambala: loan.principalTambala,
+        direction: 'DEBIT',
+      },
+      tx
+    );
 
-  // Flip loan status.
-  const updated = await disburseLoan({ loanId, paychanguRef });
+    return tx.loan.update({
+      where: { id: loanId },
+      data: {
+        status: 'DISBURSED',
+        disbursedAt: new Date(),
+        ...(paychanguRef ? { paychanguRef } : {}),
+      },
+    });
+  });
 
   // Recompute health score (fire-and-forget).
   computeHealthScore(loan.groupId)
     .then((b) => saveHealthScore(loan.groupId, b))
     .catch(console.error);
 
-  return { success: true, data: updated };
+  return { success: true, data: updated as unknown as LoanRecord };
 }

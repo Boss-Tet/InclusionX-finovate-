@@ -27,7 +27,9 @@ export async function resolveWithdrawal(
     where: { id: requestId },
     data: {
       status: outcome,
-      ...(outcome === 'APPROVED' ? { paidOutAt: new Date() } : {}),
+      // NOTE: paidOutAt is intentionally NOT set here.
+      // paidOutAt is only set when status → PAID_OUT (after PayChangu confirms the payout).
+      // That transition is handled by Arthony's webhook handler, not this service.
     },
   });
 

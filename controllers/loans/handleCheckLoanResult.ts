@@ -59,7 +59,7 @@ export async function handleCheckLoanResult(
     return { success: true, data: { resolved: true, loan: updated } };
   }
 
-  // Not enough votes yet — no change.
-  const current = await db.loan.findUniqueOrThrow({ where: { id: loanId } });
-  return { success: true, data: { resolved: false, loan: current as unknown as LoanRecord } };
+  // Not enough votes yet — no state change.
+  // BUG-11 FIX: return the loan already loaded above, no second DB round-trip needed.
+  return { success: true, data: { resolved: false, loan: loan as unknown as LoanRecord } };
 }

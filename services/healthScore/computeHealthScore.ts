@@ -7,6 +7,10 @@
 // Does NOT persist anything — call saveHealthScore.ts after this.
 //
 // IMPORTANT: reads from attendance (Orama's table) — READ ONLY.
+//
+// FIX BUG-06: Removed unused `approvedCycles` dead-code variable.
+// FIX BUG-07: Fixed governance score denominator — officer votes on loans
+//   and member votes on withdrawals are now separate pools, not combined.
 // =============================================================================
 
 import db from '@/lib/db';
@@ -29,6 +33,7 @@ export async function computeHealthScore(groupId: string): Promise<HealthScoreBr
     meetings,
     loanVotes,
     withdrawalVotes,
+    resolvedWithdrawalCount,
   ] = await Promise.all([
     db.groupMember.count({ where: { groupId, status: 'ACTIVE' } }),
     db.contribution.findMany({
@@ -45,17 +50,14 @@ export async function computeHealthScore(groupId: string): Promise<HealthScoreBr
     }),
     db.loanVote.count({ where: { loan: { groupId } } }),
     db.withdrawalVote.count({ where: { request: { groupId } } }),
+    // BUG-07 FIX: need the count of resolved withdrawal requests for governance denominator.
+    db.withdrawalRequest.count({
+      where: { groupId, status: { not: 'PENDING' } },
+    }),
   ]);
 
   // ── 2. SAVINGS COMPONENT (35 pts) ─────────────────────────────────────────
-  // Count distinct cycle periods that had at least one approved contribution
-  const approvedCycles = new Set(
-    contributions
-      .filter((c) => c.status === 'APPROVED' && c.cyclePeriod)
-      .map((c) => c.cyclePeriod!)
-  ).size;
-
-  // Total expected contributions = active members × distinct cycles
+  // BUG-06 FIX: removed unused `approvedCycles` variable.
   const distinctCycles = new Set(
     contributions.filter((c) => c.cyclePeriod).map((c) => c.cyclePeriod!)
   ).size;
@@ -99,18 +101,25 @@ export async function computeHealthScore(groupId: string): Promise<HealthScoreBr
   );
 
   // ── 5. GOVERNANCE COMPONENT (10 pts) ──────────────────────────────────────
-  // Vote participation: total votes cast vs expected
-  const totalVotableItems = loans.length + 0; // withdrawal items counted via votes table
-  const requiredVotesPerLoan = 3; // Chairperson + Treasurer + Secretary
-  const maxLoanVotes = totalVotableItems * requiredVotesPerLoan;
-  const totalVotesCast = loanVotes + withdrawalVotes;
-  const voteParticipationRate = safeDivide(totalVotesCast, Math.max(maxLoanVotes + activeMembers, 1));
+  //
+  // BUG-07 FIX: officer votes on loans and member votes on withdrawals are
+  // separate vote pools and must be evaluated independently before averaging.
+  //
+  // Pool A — officer votes on loans (3 officers × number of loans).
+  const requiredVotesPerLoan = 3; // CHAIRPERSON + TREASURER + SECRETARY
+  const maxOfficerVotes = loans.length * requiredVotesPerLoan;
+  const officerVoteRate = safeDivide(loanVotes, Math.max(maxOfficerVotes, 1));
 
-  // Meeting held rate: meetings with any attendance recorded
+  // Pool B — member votes on withdrawals (all active members × resolved withdrawal requests).
+  const maxMemberVotes = resolvedWithdrawalCount * activeMembers;
+  const memberVoteRate = safeDivide(withdrawalVotes, Math.max(maxMemberVotes, 1));
+
+  // Pool C — meetings held (meetings with any attendance recorded).
   const meetingsWithAttendance = meetings.filter((m) => m.attendance.length > 0).length;
   const meetingHeldRate = safeDivide(meetingsWithAttendance, Math.max(meetings.length, 1));
 
-  const governanceRate = (voteParticipationRate + meetingHeldRate) / 2;
+  // Governance = average of the three participation rates.
+  const governanceRate = (officerVoteRate + memberVoteRate + meetingHeldRate) / 3;
   const governanceComponent = clamp(
     Math.round(governanceRate * HEALTH_SCORE_MAX.governance * 100) / 100,
     0,

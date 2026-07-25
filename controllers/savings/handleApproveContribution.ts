@@ -6,10 +6,12 @@
 // Guard reads GroupMember.roleInGroup — NOT User.platformRole.
 // On APPROVE → write ledger entry FIRST, then flip status.
 // Triggers a Health Score recompute.
+//
+// FIX BUG-03: ledger write + status flip now wrapped in one db.$transaction.
+//   If the status update fails, the ledger entry is rolled back too.
 // =============================================================================
 
 import db from '@/lib/db';
-import { approveContribution } from '@/services/savings/approveContribution';
 import { appendLedgerEntry } from '@/services/ledger/appendLedgerEntry';
 import { computeHealthScore } from '@/services/healthScore/computeHealthScore';
 import { saveHealthScore } from '@/services/healthScore/saveHealthScore';
@@ -38,7 +40,7 @@ export async function handleApproveContribution(
     };
   }
 
-  // Fetch the contribution to validate it exists and is PENDING.
+  // Validate existence and state OUTSIDE the transaction (no side effects).
   const contribution = await db.contribution.findUnique({
     where: { id: contributionId },
     select: { id: true, status: true, groupId: true, amountTambala: true },
@@ -55,28 +57,35 @@ export async function handleApproveContribution(
     };
   }
 
-  // On APPROVE: write the ledger entry before flipping status.
-  if (action === 'APPROVE') {
-    await appendLedgerEntry({
-      groupId: contribution.groupId,
-      entryType: 'CONTRIBUTION',
-      referenceId: contribution.id,
-      amountTambala: contribution.amountTambala,
-      direction: 'CREDIT',
-    });
-  }
+  // BUG-03 FIX: ledger write + status flip in ONE atomic transaction.
+  const updated = await db.$transaction(async (tx) => {
+    if (action === 'APPROVE') {
+      // Pass tx so the ledger insert shares this transaction.
+      await appendLedgerEntry(
+        {
+          groupId: contribution.groupId,
+          entryType: 'CONTRIBUTION',
+          referenceId: contribution.id,
+          amountTambala: contribution.amountTambala,
+          direction: 'CREDIT',
+        },
+        tx
+      );
+    }
 
-  // Flip the contribution status.
-  const updated = await approveContribution({
-    contributionId,
-    approvedById: callerUserId,
-    action,
+    return tx.contribution.update({
+      where: { id: contributionId },
+      data: {
+        status: action === 'APPROVE' ? 'APPROVED' : 'REJECTED',
+        approvedById: callerUserId,
+      },
+    });
   });
 
-  // Trigger Health Score recompute (fire-and-forget, don't block response).
+  // Health Score recompute (fire-and-forget — don't block response).
   computeHealthScore(contribution.groupId)
     .then((breakdown) => saveHealthScore(contribution.groupId, breakdown))
     .catch(console.error);
 
-  return { success: true, data: updated };
+  return { success: true, data: updated as ContributionRecord };
 }

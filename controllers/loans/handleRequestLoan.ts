@@ -11,6 +11,7 @@
 import db from '@/lib/db';
 import { createLoanRequest } from '@/services/loans/createLoanRequest';
 import { getMemberBalance } from '@/services/savings/getMemberBalance';
+import { LOAN_RULES } from '@/config/loanRules';
 import { RequestLoanInput } from '@/lib/validations/loans';
 import { ApiResponse, LoanRecord } from '@/types/financial';
 
@@ -38,11 +39,13 @@ export async function handleRequestLoan(
   }
 
   // 2. Check member is active.
-  const membership = await db.groupMember.findUnique({
-    where: { groupId_userId: { groupId, userId: memberId } },
+  // BUG-04 FIX: memberId from the request is GroupMember.id, not User.id.
+  // Use findFirst on the primary key, NOT the groupId_userId composite index.
+  const membership = await db.groupMember.findFirst({
+    where: { id: memberId, groupId, status: 'ACTIVE' },
     select: { id: true, status: true },
   });
-  if (!membership || membership.status !== 'ACTIVE') {
+  if (!membership) {
     return { success: false, error: 'Member is not active in this group.', code: 'FORBIDDEN' };
   }
 
@@ -63,7 +66,16 @@ export async function handleRequestLoan(
     };
   }
 
-  // 4. Enforce loan cap: principal ≤ savingsBalance × loanMultipleCap.
+  // 4. Enforce minimum loan amount (BUG-08 FIX).
+  if (principalTambala < LOAN_RULES.minPrincipalTambala) {
+    return {
+      success: false,
+      error: `Minimum loan amount is ${LOAN_RULES.minPrincipalTambala} tambala (${LOAN_RULES.minPrincipalTambala / 100} MWK).`,
+      code: 'BELOW_MINIMUM',
+    };
+  }
+
+  // 5. Enforce loan cap: principal ≤ savingsBalance × loanMultipleCap.
   const balance = await getMemberBalance(membership.id, groupId);
   const maxAllowed = Math.floor(
     balance.totalContributedTambala * Number(group.loanMultipleCap)

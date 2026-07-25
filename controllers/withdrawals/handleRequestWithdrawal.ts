@@ -44,17 +44,28 @@ export async function handleRequestWithdrawal(
     return { success: false, error: 'You already have a pending withdrawal request.', code: 'CONFLICT' };
   }
 
-  // Check group balance (from latest ledger balanceAfter).
+  // BUG-09 FIX: Subtract the sum of all currently PENDING withdrawal amounts
+  // from the group balance before checking. Two concurrent requests can both
+  // read the same balance and both pass; this committed-amount reservation
+  // prevents over-commitment of the pool.
   const lastEntry = await db.ledgerEntry.findFirst({
     where: { groupId },
     orderBy: { createdAt: 'desc' },
     select: { balanceAfter: true },
   });
   const groupBalance = lastEntry?.balanceAfter ?? 0;
-  if (amountTambala > groupBalance) {
+
+  const pendingSum = await db.withdrawalRequest.aggregate({
+    where: { groupId, status: 'PENDING' },
+    _sum: { amountTambala: true },
+  });
+  const committedAmount = pendingSum._sum.amountTambala ?? 0;
+  const availableBalance = groupBalance - committedAmount;
+
+  if (amountTambala > availableBalance) {
     return {
       success: false,
-      error: `Withdrawal amount (${amountTambala}) exceeds group pool balance (${groupBalance}).`,
+      error: `Withdrawal amount (${amountTambala}) exceeds available group balance (${availableBalance}). ${committedAmount > 0 ? `(${committedAmount} tambala is reserved by other pending requests)` : ''}`,
       code: 'INSUFFICIENT_FUNDS',
     };
   }

@@ -4,21 +4,21 @@
 //
 // Business rules:
 //   1. Loan must be DISBURSED or REPAYING
-//   2. Repayment amount must not exceed remaining balance
-//   3. Write ledger CREDIT entry, then record repayment instalment
-//   4. If amountRepaid + thisPayment >= totalDue → mark REPAID
-//   5. Otherwise keep status as REPAYING
-//   6. Trigger Health Score recompute
+//   2. Repayment must not exceed remaining balance
+//   3. Ledger CREDIT + instalment insert + amountRepaid increment atomically (FIX BUG-03)
+//   4. Mark REPAID when balance is cleared
+//   5. Trigger Health Score recompute
+//
+// FIX BUG-03: All three DB writes are inside ONE db.$transaction.
 // =============================================================================
 
 import db from '@/lib/db';
-import { createRepayment } from '@/services/loans/createRepayment';
-import { updateLoanStatus } from '@/services/loans/updateLoanStatus';
 import { appendLedgerEntry } from '@/services/ledger/appendLedgerEntry';
 import { computeHealthScore } from '@/services/healthScore/computeHealthScore';
 import { saveHealthScore } from '@/services/healthScore/saveHealthScore';
 import { RepayLoanInput } from '@/lib/validations/loans';
 import { ApiResponse } from '@/types/financial';
+import { LOAN_RULES } from '@/config/loanRules';
 
 interface HandleRepayLoanArgs extends RepayLoanInput {
   loanId: string;
@@ -29,7 +29,7 @@ export async function handleRepayLoan(
 ): Promise<ApiResponse<{ loanStatus: string; remainingDueTambala: number }>> {
   const { loanId, amountTambala, method, paychanguRef, idempotencyKey } = args;
 
-  // Load loan.
+  // Validate OUTSIDE transaction (no side effects).
   const loan = await db.loan.findUnique({
     where: { id: loanId },
     select: {
@@ -54,41 +54,52 @@ export async function handleRepayLoan(
     };
   }
 
-  // Write ledger CREDIT entry first.
-  await appendLedgerEntry({
-    groupId: loan.groupId,
-    entryType: 'LOAN_REPAYMENT',
-    referenceId: loan.id,
-    amountTambala,
-    direction: 'CREDIT',
+  // BUG-03 FIX: ledger write + repayment insert + loan update in ONE transaction.
+  const { newRemaining, newStatus } = await db.$transaction(async (tx) => {
+    // 1. Ledger CREDIT entry (passes tx so it shares this transaction).
+    await appendLedgerEntry(
+      {
+        groupId: loan.groupId,
+        entryType: 'LOAN_REPAYMENT',
+        referenceId: loan.id,
+        amountTambala,
+        direction: 'CREDIT',
+      },
+      tx
+    );
+
+    // 2. Insert repayment instalment.
+    await tx.loanRepayment.create({
+      data: {
+        loanId,
+        amountTambala,
+        method,
+        idempotencyKey: idempotencyKey ?? null,
+        paychanguRef: paychanguRef ?? null,
+      },
+    });
+
+    // 3. Increment amountRepaidTambala and determine new status.
+    const newAmountRepaid = alreadyRepaid + amountTambala;
+    const computedRemaining = totalDue - newAmountRepaid;
+    const resolvedStatus: 'REPAYING' | 'REPAID' = computedRemaining <= 0 ? 'REPAID' : 'REPAYING';
+
+    await tx.loan.update({
+      where: { id: loanId },
+      data: {
+        amountRepaidTambala: { increment: amountTambala },
+        status: resolvedStatus,
+        ...(resolvedStatus === 'REPAID' ? { repaidAt: new Date() } : {}),
+      },
+    });
+
+    return { newRemaining: Math.max(computedRemaining, 0), newStatus: resolvedStatus };
   });
 
-  // Record the instalment (also increments amountRepaidTambala on loan).
-  const { newAmountRepaidTambala } = await createRepayment({
-    loanId,
-    amountTambala,
-    method,
-    idempotencyKey,
-    paychanguRef,
-  });
-
-  // Determine new status.
-  const newRemaining = totalDue - newAmountRepaidTambala;
-  let newStatus: 'REPAYING' | 'REPAID' = newRemaining <= 0 ? 'REPAID' : 'REPAYING';
-
-  await updateLoanStatus({
-    loanId,
-    status: newStatus,
-    ...(newStatus === 'REPAID' ? { repaidAt: new Date() } : {}),
-  });
-
-  // Recompute health score.
+  // Recompute health score (fire-and-forget).
   computeHealthScore(loan.groupId)
     .then((b) => saveHealthScore(loan.groupId, b))
     .catch(console.error);
 
-  return {
-    success: true,
-    data: { loanStatus: newStatus, remainingDueTambala: Math.max(newRemaining, 0) },
-  };
+  return { success: true, data: { loanStatus: newStatus, remainingDueTambala: newRemaining } };
 }

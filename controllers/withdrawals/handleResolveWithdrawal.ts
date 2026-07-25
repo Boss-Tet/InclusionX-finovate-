@@ -5,16 +5,11 @@
 // Called after every withdrawal vote to check if quorum has been reached.
 // Quorum formula: ceil(activeMembers × group.withdrawalQuorumPct / 100)
 //
-// Resolution logic:
-//   - If (approveCount + rejectCount) >= quorumNeeded AND approveCount >= quorumNeeded
-//     → APPROVED → write WITHDRAWAL ledger DEBIT → trigger health score recompute
-//   - If rejectCount makes approve impossible (activeMembers - rejectCount < quorumNeeded)
-//     → REJECTED early
-//   - Otherwise → no change (still collecting votes)
+// FIX BUG-03: ledger DEBIT + status flip in ONE db.$transaction.
+// FIX BUG-10: removed unused `totalVotes` variable.
 // =============================================================================
 
 import db from '@/lib/db';
-import { resolveWithdrawal } from '@/services/withdrawals/resolveWithdrawal';
 import { getWithdrawalVotes } from '@/services/withdrawals/getWithdrawalVotes';
 import { appendLedgerEntry } from '@/services/ledger/appendLedgerEntry';
 import { computeHealthScore } from '@/services/healthScore/computeHealthScore';
@@ -24,7 +19,7 @@ import { ApiResponse, WithdrawalRequestRecord } from '@/types/financial';
 export async function handleResolveWithdrawal(
   requestId: string
 ): Promise<ApiResponse<{ resolved: boolean; request: WithdrawalRequestRecord }>> {
-  // Load request + group config.
+  // Load request + group config OUTSIDE transaction (read-only).
   const request = await db.withdrawalRequest.findUnique({
     where: { id: requestId },
     include: { group: { select: { withdrawalQuorumPct: true } } },
@@ -34,7 +29,6 @@ export async function handleResolveWithdrawal(
     return { success: false, error: `Request already ${request.status}.`, code: 'INVALID_STATE' };
   }
 
-  // Count active members in the group.
   const activeMembers = await db.groupMember.count({
     where: { groupId: request.groupId, status: 'ACTIVE' },
   });
@@ -45,37 +39,49 @@ export async function handleResolveWithdrawal(
   const votes = await getWithdrawalVotes(requestId);
   const approveCount = votes.filter((v) => v.decision === 'APPROVE').length;
   const rejectCount = votes.filter((v) => v.decision === 'REJECT').length;
-  const totalVotes = approveCount + rejectCount;
+  // BUG-10 FIX: removed unused `totalVotes` variable.
 
-  // Check early rejection: enough rejections that approve is now impossible.
+  // Early rejection: enough rejections that approval is mathematically impossible.
   const maxPossibleApprove = activeMembers - rejectCount;
   if (maxPossibleApprove < quorumNeeded) {
-    const updated = await resolveWithdrawal({ requestId, outcome: 'REJECTED' });
-    return { success: true, data: { resolved: true, request: updated } };
+    const updated = await db.withdrawalRequest.update({
+      where: { id: requestId },
+      data: { status: 'REJECTED' },
+    });
+    return { success: true, data: { resolved: true, request: updated as WithdrawalRequestRecord } };
   }
 
-  // Check approval quorum reached.
+  // Approval quorum reached.
   if (approveCount >= quorumNeeded) {
-    // Write DEBIT ledger entry.
-    await appendLedgerEntry({
-      groupId: request.groupId,
-      entryType: 'WITHDRAWAL',
-      referenceId: request.id,
-      amountTambala: request.amountTambala,
-      direction: 'DEBIT',
+    // BUG-03 FIX: ledger DEBIT + status flip in ONE atomic transaction.
+    const updated = await db.$transaction(async (tx) => {
+      await appendLedgerEntry(
+        {
+          groupId: request.groupId,
+          entryType: 'WITHDRAWAL',
+          referenceId: request.id,
+          amountTambala: request.amountTambala,
+          direction: 'DEBIT',
+        },
+        tx
+      );
+
+      return tx.withdrawalRequest.update({
+        where: { id: requestId },
+        data: { status: 'APPROVED' },
+        // NOTE: paidOutAt is NOT set here — it's set by the PayChangu webhook
+        // handler (Arthony) when status transitions to PAID_OUT.
+      });
     });
 
-    const updated = await resolveWithdrawal({ requestId, outcome: 'APPROVED' });
-
-    // Recompute health score.
     computeHealthScore(request.groupId)
       .then((b) => saveHealthScore(request.groupId, b))
       .catch(console.error);
 
-    return { success: true, data: { resolved: true, request: updated } };
+    return { success: true, data: { resolved: true, request: updated as WithdrawalRequestRecord } };
   }
 
-  // Not yet resolved.
+  // Not yet resolved — still collecting votes.
   return {
     success: true,
     data: { resolved: false, request: request as unknown as WithdrawalRequestRecord },
