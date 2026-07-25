@@ -191,6 +191,11 @@ model User {
   twoFactorSecret      String?  // base32 TOTP secret (encrypt at rest in production)
   twoFactorBackupCodes String[] // bcrypt-hashed one-time backup codes
 
+  // ── Notification Preferences ────────────────────────────────────────────────
+  notifyInApp Boolean  @default(true)
+  notifySms   Boolean  @default(true)
+  notifyEmail Boolean  @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

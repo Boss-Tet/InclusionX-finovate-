@@ -1,5 +1,6 @@
 import { sendEmail, SendEmailOptions } from '@/providers/smtp';
 import { sendSms, handleUssdSession, SendSmsOptions } from '@/providers/africasTalking';
+import { sendFanOutNotification, FanOutNotificationArgs } from '@/services/notifications/sendFanOutNotification';
 
 /**
  * Notifications Controller
@@ -8,10 +9,15 @@ import { sendSms, handleUssdSession, SendSmsOptions } from '@/providers/africasT
 export class NotificationsController {
   
   /**
-   * Sends an email notification.
+   * Dispatches a notification to all authorized channels based on user preferences.
    */
+  static async send(args: FanOutNotificationArgs) {
+    return await sendFanOutNotification(args);
+  }
+
+  // The email and sms methods remain for the fan-out service to use internally,
+  // or for specific system alerts (e.g. password resets).
   static async email(options: SendEmailOptions) {
-    // Future: DB logging for emails sent
     return await sendEmail(options);
   }
 
