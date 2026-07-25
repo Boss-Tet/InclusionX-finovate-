@@ -24,14 +24,15 @@ export interface SendSmsOptions {
  */
 export async function sendSms({ to, message, senderId }: SendSmsOptions) {
   const recipients = Array.isArray(to) ? to : [to];
-  const from = senderId || process.env.AT_SENDER_ID || 'VSLA';
+  // In sandbox mode, use "Sandbox" as sender. In production, use registered Sender ID.
+  const from = senderId || process.env.AT_SENDER_ID || 'Sandbox';
 
   try {
-    const result = await sms.send({
-      to: recipients,
-      message,
-      from,
-    });
+    const sendOptions: any = { to: recipients, message };
+    // Only include 'from' if a senderId is explicitly passed — omit for sandbox
+    if (from && from !== 'Sandbox') sendOptions.from = from;
+
+    const result = await sms.send(sendOptions);
 
     return { success: true, result };
   } catch (error) {

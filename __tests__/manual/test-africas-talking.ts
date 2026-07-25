@@ -23,7 +23,7 @@ async function testAfricasTalking() {
   const smsResult = await sendSms({
     to: '+254700000000', // Sandbox test number
     message: 'Hello from VSLA Connect! Your loan of MWK 5,000 has been approved. Login to VSLA Connect to confirm.',
-    senderId: 'VSLA',
+    senderId: 'Sandbox', // Use "Sandbox" in AT sandbox env; replace with registered ID in production
   });
 
   if (smsResult.success) {
