@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { AIController } from '../../../../controllers/ai/ai.controller';
+import { AIController } from '@/controllers/ai/ai.controller';
 
 export async function POST(req: Request) {
   try {

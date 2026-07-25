@@ -1,5 +1,5 @@
-import { sendEmail, SendEmailOptions } from '../../providers/smtp';
-import { sendSms, handleUssdSession, SendSmsOptions } from '../../providers/africasTalking';
+import { sendEmail, SendEmailOptions } from '@/providers/smtp';
+import { sendSms, handleUssdSession, SendSmsOptions } from '@/providers/africasTalking';
 
 /**
  * Notifications Controller

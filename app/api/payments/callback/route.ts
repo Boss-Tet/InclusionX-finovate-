@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PaymentsController } from '../../../../controllers/payments/payments.controller';
+import { PaymentsController } from '@/controllers/payments/payments.controller';
 
 export async function POST(req: Request) {
   try {

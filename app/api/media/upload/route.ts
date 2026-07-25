@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { MediaController } from '../../../../controllers/media/media.controller';
+import { MediaController } from '@/controllers/media/media.controller';
 import { writeFile } from 'fs/promises';
 import path from 'path';
 import os from 'os';
