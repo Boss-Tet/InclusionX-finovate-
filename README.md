@@ -48,7 +48,7 @@ eligible for formal credit. Access is provided through a web app and a USSD/SMS 
 | Hosting | Vercel |
 | SMS / USSD | Africa's Talking |
 | Payments | PayChangu |
-| AI | Google Gemini API |
+| AI | Groq (Llama 3.3) API |
 | Media Storage | Cloudinary |
 | Email | SMTP (Resend / SendGrid) |
 
@@ -82,7 +82,7 @@ controllers/<module>/  ← business / domain logic (validation, voting rules, le
       │           ▼
       │       Neon PostgreSQL   ← the actual database
       │
-      └──▶ providers/<adapter>/ ← external calls: PayChangu, Africa's Talking, Gemini, Cloudinary, SMTP
+      └──▶ providers/<adapter>/ ← external calls: PayChangu, Africa's Talking, Groq, Cloudinary, SMTP
 ```
 
 > **Rule:** Controllers never import Prisma. Services never call providers. Providers never touch the DB.
@@ -147,7 +147,7 @@ Each provider wraps one vendor behind a stable interface. If a sandbox is down d
 providers/
   africasTalking/   ← USSD session handler + SMS dispatch
   paychangu/        ← mobile money & card payment processing
-  gemini/           ← AI chatbot + English ↔ Chichewa translation
+  groq/             ← AI chatbot + English ↔ Chichewa translation
   cloudinary/       ← profile photo & file uploads
   smtp/             ← transactional email (password reset, confirmations)
   notifications/    ← fan-out: decides whether to send SMS, in-app, or email
@@ -313,7 +313,7 @@ Copy `.env.example` to `.env.local` and fill in real values. Never commit `.env.
 | Auth / Session | `NEXTAUTH_SECRET`, `NEXTAUTH_URL` |
 | Africa's Talking | `AT_API_KEY`, `AT_USERNAME`, `AT_SHORTCODE`, `AT_SENDER_ID` |
 | PayChangu | `PAYCHANGU_SECRET_KEY`, `PAYCHANGU_PUBLIC_KEY`, `PAYCHANGU_BASE_URL`, `PAYCHANGU_CALLBACK_URL` |
-| Gemini AI | `GEMINI_API_KEY`, `GEMINI_MODEL` |
+| Groq AI | `GROQ_API_KEY`, `GROQ_MODEL` |
 | Cloudinary | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` |
 | SMTP | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` |
 | App | `NEXT_PUBLIC_APP_URL`, `NODE_ENV` |
@@ -332,7 +332,7 @@ npm install
 
 # 3. Set up environment variables
 cp .env.example .env.local
-# Open .env.local and fill in your Neon, Africa's Talking, PayChangu, Gemini, and Cloudinary credentials
+# Open .env.local and fill in your Neon, Africa's Talking, PayChangu, Groq, and Cloudinary credentials
 
 # 4. Set up Prisma and Neon Database
 # Run these commands to push the database schema directly to Neon
@@ -373,7 +373,7 @@ export async function createNewGroup(name: string) {
 
 | Member | Role | Owns |
 |---|---|---|
-| **Arthony** | Database, Third-Party Integration & AI Lead | `prisma/`, `providers/africasTalking`, `providers/paychangu`, `providers/gemini`, `providers/cloudinary`, `providers/smtp`, `app/api/ai`, `app/api/ussd`, `app/api/payments`, `scripts/` |
+| **Arthony** | Database, Third-Party Integration & AI Lead | `prisma/`, `providers/africasTalking`, `providers/paychangu`, `providers/groq`, `providers/cloudinary`, `providers/smtp`, `app/api/ai`, `app/api/ussd`, `app/api/payments`, `scripts/` |
 | **Kilotet** | Frontend Developer | All `app/(auth)`, `app/(member)`, and role dashboard pages; `components/` (full atomic library); `hooks/`; `app/api/chat` (UI side) |
 | **Jabari** | Backend — Financial Logic | `app/api/savings`, `loans`, `withdrawals`, `ledger`, `health-score`; `controllers/` and `services/` for those modules; `config/healthScoreWeights.ts` |
 | **Orama** | Backend — Auth, Governance & Integration Support | `app/api/auth`, `groups`, `meetings`, `notifications`; `controllers/` and `services/` for those modules; `middleware.ts`; supports Arthony on integration wiring |
