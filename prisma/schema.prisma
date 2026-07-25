@@ -212,11 +212,41 @@ model User {
   chatMessagesSent      ChatMessage[]
   aiMessages            AiMessage[]
   bankAnnotations       BankAnnotation[]
+  supportTickets        SupportTicket[]
 
   @@index([phoneNumber])
   @@index([platformRole])
   @@index([isActive, lockedUntil])
   @@map("users")
+}
+
+// =============================================================================
+// SUPPORT TICKETS
+// UUID — internal, members reporting issues to bank officer/admin
+// =============================================================================
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model SupportTicket {
+  id          String       @id @default(uuid()) @db.Uuid
+  reporterId  String       @db.Uuid
+  subject     String       @db.VarChar(255)
+  description String       @db.Text
+  status      TicketStatus @default(OPEN)
+  resolvedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reporter    User     @relation(fields: [reporterId], references: [id])
+
+  @@index([reporterId])
+  @@index([status])
+  @@map("support_tickets")
 }
 
 // =============================================================================
