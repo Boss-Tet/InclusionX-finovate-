@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { SupportController } from "@/controllers/support/support.controller";
-import { requireAuth } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
-    const user = await requireAuth(req);
+    const userId = req.headers.get('x-caller-user-id');
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { subject, description } = await req.json();
 
-    const result = await SupportController.create(user.id, subject, description);
+    const result = await SupportController.create(userId, subject, description);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });
@@ -21,9 +22,12 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    const user = await requireAuth(req);
+    const userId = req.headers.get('x-caller-user-id');
+    const role = req.headers.get('x-caller-platform-role') || 'MEMBER';
+    
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const result = await SupportController.list(user.id, user.platformRole);
+    const result = await SupportController.list(userId, role);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 400 });

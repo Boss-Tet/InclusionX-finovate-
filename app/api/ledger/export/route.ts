@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
 
 export async function GET(req: Request) {
   try {
-    const user = await requireAuth(req);
+    const role = req.headers.get('x-caller-platform-role');
+    
     // Allow Chairperson, Treasurer, Secretary, Bank Officer, Admin
-    if (user.platformRole === "MEMBER") {
+    if (!role || role === "MEMBER") {
       return new NextResponse("Unauthorized", { status: 403 });
     }
 
