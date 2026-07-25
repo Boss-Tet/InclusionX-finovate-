@@ -35,6 +35,7 @@ const BANK_OFFICER_PATHS = ['/bank-officer', '/admin'];
 
 // Routes that are public — skip auth check entirely.
 const PUBLIC_PATHS = [
+  '/',
   '/api/auth/register',
   '/api/auth/verify-phone',
   '/api/auth/login',
