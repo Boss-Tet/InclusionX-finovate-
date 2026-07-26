@@ -1,8 +1,9 @@
 import React from 'react';
+import Image from 'next/image';
 
 export interface AuthShellProps {
   children: React.ReactNode;
-  /** Which visual panel gradient variant to use */
+  /** Which visual panel image/gradient to use */
   panel?: 'signup' | 'login' | 'forgot' | 'verify' | 'reset';
   testimonial?: {
     quote: string;
@@ -12,17 +13,22 @@ export interface AuthShellProps {
   };
 }
 
-const PANEL_BG: Record<NonNullable<AuthShellProps['panel']>, string> = {
-  signup:
-    'radial-gradient(ellipse 60% 40% at 75% 15%, rgba(255,236,190,0.25), transparent 60%), linear-gradient(180deg, #2f4a3b 0%, #3a5c48 45%, #2a4738 100%)',
-  login:
-    'radial-gradient(ellipse 55% 40% at 30% 10%, rgba(255,240,200,0.2), transparent 60%), linear-gradient(180deg, #1e3d2f 0%, #2d5a44 50%, #23483a 100%)',
-  forgot:
-    'radial-gradient(ellipse 45% 30% at 50% 5%, rgba(255,232,190,0.5), transparent 65%), linear-gradient(180deg, #33564a 0%, #3d6152 50%, #2f4f43 100%)',
-  verify:
-    'radial-gradient(ellipse 55% 45% at 70% 20%, rgba(255,247,214,0.45), transparent 60%), linear-gradient(180deg, #cdd9ba 0%, #a9bf9a 40%, #7f9a80 75%, #5c7864 100%)',
-  reset:
-    'radial-gradient(ellipse 50% 30% at 25% 85%, rgba(255,230,180,0.18), transparent 60%), linear-gradient(180deg, #1f4436 0%, #2b5a45 45%, #d8cdb6 46%, #cfc3a8 100%)',
+/** Image used for each panel variant. signup/forgot/reset all share the group photo. */
+const PANEL_IMAGE: Record<NonNullable<AuthShellProps['panel']>, string> = {
+  login: '/auth-panel-login.png',
+  signup: '/auth-panel-signup.png',
+  forgot: '/auth-panel-signup.png',
+  verify: '/auth-panel-verify.png',
+  reset: '/auth-panel-verify.png',
+};
+
+/** Fallback tint colour shown while the image loads */
+const PANEL_TINT: Record<NonNullable<AuthShellProps['panel']>, string> = {
+  login: '#2a4a38',
+  signup: '#2f4a3b',
+  forgot: '#33564a',
+  verify: '#3d5c4a',
+  reset: '#1f4436',
 };
 
 const DEFAULT_TESTIMONIAL: NonNullable<AuthShellProps['testimonial']> = {
@@ -38,7 +44,8 @@ export const AuthShell: React.FC<AuthShellProps> = ({
   panel = 'login',
   testimonial = DEFAULT_TESTIMONIAL,
 }) => {
-  const bg = PANEL_BG[panel];
+  const imgSrc = PANEL_IMAGE[panel];
+  const tint = PANEL_TINT[panel];
   const active = testimonial.activeSlide ?? 0;
 
   return (
@@ -71,19 +78,30 @@ export const AuthShell: React.FC<AuthShellProps> = ({
       <div className="hidden flex-1 p-5 pl-0 md:flex">
         <div
           className="relative flex-1 overflow-hidden rounded-[26px]"
-          style={{ background: bg }}
+          style={{ background: tint }}
         >
-          {/* Bottom scrim */}
+          {/* Full-bleed photo */}
+          <Image
+            src={imgSrc}
+            alt="VSLA women savings group"
+            fill
+            className="object-cover object-center"
+            priority
+            sizes="50vw"
+          />
+
+          {/* Dark gradient scrim — bottom 44% so testimonial is readable */}
           <div
-            className="absolute inset-x-0 bottom-0 h-[44%]"
+            className="absolute inset-x-0 bottom-0 z-10"
             style={{
+              height: '55%',
               background:
-                'linear-gradient(180deg, rgba(10,15,12,0) 0%, rgba(8,12,10,0.82) 100%)',
+                'linear-gradient(180deg, rgba(10,15,12,0) 0%, rgba(8,12,10,0.88) 100%)',
             }}
           />
 
           {/* Testimonial */}
-          <div className="absolute bottom-[46px] left-6 right-6 text-white">
+          <div className="absolute bottom-[46px] left-6 right-6 z-20 text-white">
             <p
               className="mb-3.5 leading-relaxed"
               style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.92)' }}
@@ -97,7 +115,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({
           </div>
 
           {/* Dot indicators */}
-          <div className="absolute bottom-[18px] left-6 right-6 flex gap-1.5">
+          <div className="absolute bottom-[18px] left-6 right-6 z-20 flex gap-1.5">
             {[0, 1, 2, 3].map((i) => (
               <span
                 key={i}
