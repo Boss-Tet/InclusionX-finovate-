@@ -1,61 +1,111 @@
 'use client';
 
-import { useState } from 'react';
-import { MOCK_LOANS, MOCK_REPAYMENTS } from '@/lib/mock/loansMock';
-import { LoanWithVotes } from '@/types/financial';
+/**
+ * hooks/useLoans.ts — real API integration
+ *
+ * GET  /api/loans?groupId=&memberId= → list loans
+ * POST /api/loans                    → request a loan
+ * POST /api/loans/[id]/vote          → cast vote (chairperson/treasurer/secretary)
+ * POST /api/loans/[id]/repay         → make repayment
+ *
+ * Requires:
+ *   - vsla_token cookie (middleware injects x-caller-member-id etc.)
+ *   - x-active-group-id in localStorage (api client injects it)
+ */
 
-export function useLoans(memberId: string = 'usr-mem-01') {
-  const [loans, setLoans] = useState<LoanWithVotes[]>(MOCK_LOANS);
+import { useState, useEffect, useCallback } from 'react';
+import { api, ApiError } from '@/lib/api/client';
+import type { LoanWithVotes } from '@/types/financial';
 
-  const applyLoan = (principalTambala: number, reason?: string) => {
-    const newLoan: LoanWithVotes = {
-      id: `loan-${Date.now()}`,
-      groupId: 'grp-001',
-      memberId,
-      principalTambala,
-      interestRate: 10,
-      totalDueTambala: Math.round(principalTambala * 1.1),
-      amountRepaidTambala: 0,
-      status: 'PENDING',
-      rejectionReason: null,
-      requestedAt: new Date(),
-      approvedAt: null,
-      disbursedAt: null,
-      dueDate: null,
-      repaidAt: null,
-      remainingDueTambala: Math.round(principalTambala * 1.1),
-      votes: [],
-    };
-    setLoans((prev) => [newLoan, ...prev]);
-  };
+interface UseLoansOptions {
+  groupId: string;
+  memberId?: string;
+  /** Caller's GroupMember.id — used to authorise self-service requests */
+  callerMemberId?: string;
+}
 
-  const voteLoan = (loanId: string, decision: 'APPROVE' | 'REJECT', note?: string) => {
-    setLoans((prev) =>
-      prev.map((l) => {
-        if (l.id === loanId) {
-          const newVote = {
-            id: `vote-${Date.now()}`,
-            loanId,
-            voterId: 'usr-chair-01',
-            decision,
-            note: note || null,
-            votedAt: new Date(),
-          };
-          return {
-            ...l,
-            votes: [...l.votes, newVote],
-            status: decision === 'APPROVE' ? ('APPROVED' as const) : ('REJECTED' as const),
-          };
-        }
-        return l;
-      })
-    );
-  };
+interface LoansState {
+  loans: LoanWithVotes[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+export function useLoans({ groupId, memberId, callerMemberId }: UseLoansOptions) {
+  const [state, setState] = useState<LoansState>({
+    loans: [],
+    isLoading: true,
+    error: null,
+  });
+
+  const fetchLoans = useCallback(async () => {
+    if (!groupId) return;
+    setState((s) => ({ ...s, isLoading: true, error: null }));
+    try {
+      const params = new URLSearchParams({ groupId });
+      if (memberId) params.set('memberId', memberId);
+      const data = await api.get<{ items: LoanWithVotes[]; total: number }>(
+        `/api/loans?${params}`
+      );
+      setState({ loans: data.items ?? [], isLoading: false, error: null });
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to load loans.';
+      setState((s) => ({ ...s, isLoading: false, error: msg }));
+    }
+  }, [groupId, memberId]);
+
+  useEffect(() => { fetchLoans(); }, [fetchLoans]);
+
+  const applyLoan = useCallback(
+    async (principalTambala: number, dueDate?: string) => {
+      if (!callerMemberId) throw new Error('callerMemberId required to apply for a loan.');
+      await api.post('/api/loans', {
+        groupId,
+        memberId: callerMemberId,
+        principalTambala,
+        ...(dueDate ? { dueDate } : {}),
+      });
+      await fetchLoans();
+    },
+    [groupId, callerMemberId, fetchLoans]
+  );
+
+  const voteLoan = useCallback(
+    async (loanId: string, decision: 'APPROVE' | 'REJECT', note?: string) => {
+      if (!callerMemberId) throw new Error('callerMemberId required to vote.');
+      await api.post(`/api/loans/${loanId}/vote`, {
+        voterId: callerMemberId,
+        decision,
+        ...(note ? { note } : {}),
+      });
+      await fetchLoans();
+    },
+    [callerMemberId, fetchLoans]
+  );
+
+  const repayLoan = useCallback(
+    async (
+      loanId: string,
+      amountTambala: number,
+      method: 'CASH' | 'MOBILE_MONEY' | 'CARD',
+      paychanguRef?: string
+    ) => {
+      await api.post(`/api/loans/${loanId}/repay`, {
+        amountTambala,
+        method,
+        ...(paychanguRef ? { paychanguRef } : {}),
+      });
+      await fetchLoans();
+    },
+    [fetchLoans]
+  );
 
   return {
-    loans,
-    repayments: MOCK_REPAYMENTS,
+    loans: state.loans,
+    isLoading: state.isLoading,
+    error: state.error,
     applyLoan,
     voteLoan,
+    repayLoan,
+    refresh: fetchLoans,
   };
 }
