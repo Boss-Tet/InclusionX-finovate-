@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { setActiveGroupId } from '@/lib/api/client';
+import { Key, PlusCircle, CheckCircle, Copy, Check } from 'lucide-react';
 
 /* ─── Design tokens ────────────────────────────────────────────── */
 const brandGreen = '#2E7D46';
@@ -116,10 +117,10 @@ function JoinGroupPanel({ onSuccess }: { onSuccess: (groupId: string) => void })
         type="button"
         onClick={handleJoin}
         disabled={loading}
-        className="w-full rounded-full py-3 text-[13.5px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-full py-3 text-[13.5px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
         style={{ background: btnGreen, border: 'none', fontFamily: 'inherit' }}
       >
-        {loading ? 'Joining…' : 'Join Group'}
+        {loading ? 'Joining…' : <><Key className="h-4 w-4" /> Join Group</>}
       </button>
     </div>
   );
@@ -257,10 +258,10 @@ function CreateGroupPanel({ onSuccess }: { onSuccess: (groupId: string, inviteCo
         type="button"
         onClick={handleCreate}
         disabled={loading}
-        className="w-full rounded-full py-3 text-[13.5px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-full py-3 text-[13.5px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
         style={{ background: btnGreen, border: 'none', fontFamily: 'inherit' }}
       >
-        {loading ? 'Creating Group…' : 'Create Group'}
+        {loading ? 'Creating Group…' : <><PlusCircle className="h-4 w-4" /> Create Group</>}
       </button>
     </div>
   );
@@ -289,8 +290,8 @@ function GroupCreatedModal({ inviteCode, onContinue }: { inviteCode: string; onC
           </svg>
         </div>
 
-        <h2 className="mb-1 text-center text-[18px] font-extrabold" style={{ color: inkColor }}>
-          Group Created! 🎉
+        <h2 className="mb-1 flex items-center justify-center gap-2 text-center text-[18px] font-extrabold" style={{ color: inkColor }}>
+          Group Created! <CheckCircle className="h-5 w-5 text-[#2E7D46]" />
         </h2>
         <p className="mb-5 text-center text-[13px]" style={{ color: inkSoft }}>
           Share this invite code with your group members so they can join.
@@ -306,14 +307,14 @@ function GroupCreatedModal({ inviteCode, onContinue }: { inviteCode: string; onC
           <button
             type="button"
             onClick={copy}
-            className="ml-3 rounded-[8px] px-3 py-1.5 text-[12px] font-bold transition-colors"
+            className="ml-3 flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-[12px] font-bold transition-colors"
             style={{
               background: copied ? brandGreen : 'transparent',
               color: copied ? '#fff' : brandGreen,
               border: `1px solid ${brandGreen}`,
             }}
           >
-            {copied ? 'Copied!' : 'Copy'}
+            {copied ? <><Check className="h-3.5 w-3.5" /> Copied!</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
           </button>
         </div>
 
@@ -371,7 +372,7 @@ export function GroupOnboarding({ userName }: { userName?: string }) {
               </svg>
             </div>
             <h1 className="text-[22px] font-extrabold" style={{ color: inkColor }}>
-              Welcome{userName ? `, ${userName.split(' ')[0]}` : ''}! 👋
+              Welcome{userName ? `, ${userName.split(' ')[0]}` : ''}!
             </h1>
             <p className="mt-1.5 text-[13.5px]" style={{ color: inkSoft }}>
               You&apos;re not in any VSLA group yet. Join an existing group or create your own.
@@ -397,7 +398,13 @@ export function GroupOnboarding({ userName }: { userName?: string }) {
                     boxShadow: tab === t ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
                   }}
                 >
-                  {t === 'join' ? '🔑 Join a Group' : '✨ Create a Group'}
+                  <span className="flex items-center justify-center gap-2">
+                    {t === 'join' ? (
+                      <><Key className="h-4 w-4" /> Join a Group</>
+                    ) : (
+                      <><PlusCircle className="h-4 w-4" /> Create a Group</>
+                    )}
+                  </span>
                 </button>
               ))}
             </div>
