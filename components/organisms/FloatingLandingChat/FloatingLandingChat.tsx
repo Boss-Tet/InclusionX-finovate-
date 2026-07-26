@@ -114,7 +114,7 @@ FORMATTING: Your primary goal is to filter and provide precise, bite-sized answe
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          history: newHistory,
+          history: newHistory.map(({ role, content }) => ({ role, content })),
           systemInstruction
         })
       });
