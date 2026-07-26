@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950">
         {children}
       </body>
     </html>

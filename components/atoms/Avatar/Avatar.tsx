@@ -3,32 +3,44 @@ import { cn } from '@/lib/utils/cn';
 
 export interface AvatarProps {
   src?: string;
-  name: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  name?: string;
+  initials?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  theme?: 'green' | 'blue' | 'purple' | 'orange' | 'red' | 'gray';
   showStatus?: boolean;
   status?: 'online' | 'offline' | 'busy';
+  alt?: string;
   className?: string;
 }
+
+const themeStyles: Record<string, string> = {
+  green:  "bg-[#2D7A52] text-white",
+  blue:   "bg-[#2F6FED] text-white",
+  purple: "bg-[#8B5CF6] text-white",
+  orange: "bg-[#E8873A] text-white",
+  red:    "bg-[#DC2626] text-white",
+  gray:   "bg-[#9AA6BC] text-white",
+};
 
 export const Avatar: React.FC<AvatarProps> = ({
   src,
   name,
+  initials,
   size = 'md',
+  theme = 'green',
   showStatus = false,
   status = 'online',
+  alt = 'User avatar',
   className,
 }) => {
-  const getInitials = (n: string) => {
-    const parts = n.trim().split(' ');
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    return n.slice(0, 2).toUpperCase();
-  };
+  const displayInitials = initials ?? (name ? (name.trim().split(' ').length >= 2 ? `${name.trim().split(' ')[0][0]}${name.trim().split(' ')[1][0]}` : name.slice(0, 2)).toUpperCase() : 'U');
 
   const sizeStyles = {
+    xs: 'w-6 h-6 text-[10px]',
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
     lg: 'w-12 h-12 text-base',
-    xl: 'w-16 h-16 text-lg font-bold',
+    xl: 'w-16 h-16 text-lg font-extrabold',
   };
 
   const statusColors = {
@@ -42,18 +54,19 @@ export const Avatar: React.FC<AvatarProps> = ({
       {src ? (
         <img
           src={src}
-          alt={name}
+          alt={name || alt}
           className={cn('rounded-full object-cover shadow-sm', sizeStyles[size], className)}
         />
       ) : (
         <div
           className={cn(
-            'rounded-full bg-emerald-100 text-emerald-800 font-semibold flex items-center justify-center border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+            'rounded-full font-bold flex items-center justify-center border border-white/20 select-none',
+            themeStyles[theme] || themeStyles.green,
             sizeStyles[size],
             className
           )}
         >
-          {getInitials(name)}
+          {displayInitials}
         </div>
       )}
       {showStatus && (
