@@ -8,7 +8,7 @@
 
 const BASE_URL = process.env.PAYCHANGU_BASE_URL || 'https://api.paychangu.com';
 const SECRET_KEY = process.env.PAYCHANGU_SECRET_KEY!;
-const CALLBACK_URL = process.env.PAYCHANGU_CALLBACK_URL || 'http://localhost:3000/api/payments/callback';
+const CALLBACK_URL = process.env.PAYCHANGU_CALLBACK_URL || 'https://inclusion-x-finovate.vercel.app/api/payments/callback';
 
 export interface InitiatePaymentOptions {
   amountTambala: number;       // Amount in tambala — we convert to MWK internally
