@@ -91,7 +91,7 @@ export default function ChairpersonDashboardPage() {
 
         <GroupDirectory members={members} />
 
-        <UpcomingMeetings meetings={meetings} onRSVP={confirmAttendance} />
+        <UpcomingMeetings meetings={meetings} onRSVP={(id) => { void confirmAttendance(id, ''); }} />
       </div>
     </ChairpersonShell>
   );

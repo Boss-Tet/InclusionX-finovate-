@@ -1,12 +1,24 @@
 import React from 'react';
 import { Card } from '@/components/atoms/Card';
 import { Badge } from '@/components/atoms/Badge';
-import { MeetingRecord } from '@/lib/mock/meetingsMock';
 import { Calendar, Clock, MapPin, CheckCircle2 } from 'lucide-react';
 
+// Compatible with both real API MeetingRecord and mock MeetingRecord
+export interface MeetingDisplay {
+  id: string;
+  title: string;
+  scheduledAt?: string; // real API field
+  date?: string;        // mock field
+  time?: string;
+  location?: string | null;
+  status: string;
+  agendaNotes?: string | null;
+  agenda?: string;
+}
+
 export interface UpcomingMeetingsProps {
-  meetings: MeetingRecord[];
-  onRSVP?: (id: string) => void;
+  meetings: MeetingDisplay[];
+  onRSVP?: (meetingId: string, memberId?: string) => void;
 }
 
 export const UpcomingMeetings: React.FC<UpcomingMeetingsProps> = ({
@@ -28,7 +40,13 @@ export const UpcomingMeetings: React.FC<UpcomingMeetingsProps> = ({
       </div>
 
       <div className="space-y-3">
-        {meetings.map((m) => (
+        {meetings.map((m) => {
+          const displayDate = m.scheduledAt
+            ? new Date(m.scheduledAt).toLocaleDateString()
+            : (m.date ?? '');
+          const displayAgenda = m.agendaNotes ?? m.agenda ?? '';
+          const isActive = m.status === 'UPCOMING' || m.status === 'SCHEDULED';
+          return (
           <div
             key={m.id}
             className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 dark:bg-slate-800/40 dark:border-slate-800 space-y-3"
@@ -40,27 +58,33 @@ export const UpcomingMeetings: React.FC<UpcomingMeetingsProps> = ({
                 </h4>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
                   <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-emerald-600" /> {m.date}
+                    <Calendar className="w-3.5 h-3.5 text-emerald-600" /> {displayDate}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-emerald-600" /> {m.time}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" /> {m.location}
-                  </span>
+                  {m.time && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-emerald-600" /> {m.time}
+                    </span>
+                  )}
+                  {m.location && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600" /> {m.location}
+                    </span>
+                  )}
                 </div>
               </div>
-              <Badge variant={m.status === 'UPCOMING' ? 'success' : 'neutral'}>
+              <Badge variant={isActive ? 'success' : 'neutral'}>
                 {m.status}
               </Badge>
             </div>
 
-            <div className="text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-800">
-              <strong className="text-slate-800 dark:text-slate-200">Agenda: </strong>
-              {m.agenda}
-            </div>
+            {displayAgenda && (
+              <div className="text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-800">
+                <strong className="text-slate-800 dark:text-slate-200">Agenda: </strong>
+                {displayAgenda}
+              </div>
+            )}
 
-            {m.status === 'UPCOMING' && onRSVP && (
+            {isActive && onRSVP && (
               <div className="flex justify-end pt-1">
                 <button
                   onClick={() => onRSVP(m.id)}
@@ -71,7 +95,8 @@ export const UpcomingMeetings: React.FC<UpcomingMeetingsProps> = ({
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
