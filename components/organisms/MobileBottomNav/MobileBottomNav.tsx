@@ -4,10 +4,12 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, IconName } from "@/components/atoms/Icon/Icon";
+import { useNotifications } from "@/hooks/useNotifications";
 
 export const MobileBottomNav: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { unreadCount } = useNotifications(50);
 
   // Close menu if route changes
   useEffect(() => {
@@ -80,19 +82,28 @@ export const MobileBottomNav: React.FC = () => {
                 <span className="absolute -top-1.5 right-1 bg-[#E8873A] border-2 border-white text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">2</span>
               </Link>
 
-              <Link href="/messages" className="flex flex-col items-center gap-2.5 group relative">
-                <div className="w-[50px] h-[50px] rounded-[16px] bg-[#EFE9F9] text-[#8B6FC7] flex items-center justify-center group-active:scale-95 transition-all shadow-sm">
-                  <Icon name="chat" className="w-[24px] h-[24px]" />
-                </div>
-                <span className="text-[11px] font-bold text-[#5B6B65] text-center leading-tight">Messages</span>
-                <span className="absolute -top-1.5 right-1 bg-[#DC4B3F] border-2 border-white text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">3</span>
-              </Link>
-
               <Link href="/documents" className="flex flex-col items-center gap-2.5 group">
                 <div className="w-[50px] h-[50px] rounded-[16px] bg-[#FCEADC] text-[#E8873A] flex items-center justify-center group-active:scale-95 transition-all shadow-sm">
                   <Icon name="doc" className="w-[24px] h-[24px]" />
                 </div>
                 <span className="text-[11px] font-bold text-[#5B6B65] text-center leading-tight">Documents</span>
+              </Link>
+
+              <Link href="/notifications" className="flex flex-col items-center gap-2.5 group relative">
+                <div className="w-[50px] h-[50px] rounded-[16px] bg-[#E3F3EA] text-[#2D7A52] flex items-center justify-center group-active:scale-95 transition-all shadow-sm">
+                  <Icon name="bell" className="w-[24px] h-[24px]" />
+                </div>
+                <span className="text-[11px] font-bold text-[#5B6B65] text-center leading-tight">Alerts</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1.5 right-1 bg-[#E8873A] border-2 border-white text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">{unreadCount}</span>
+                )}
+              </Link>
+
+              <Link href="/ai-assistant" className="flex flex-col items-center gap-2.5 group">
+                <div className="w-[50px] h-[50px] rounded-[16px] bg-[#E8EFFD] text-[#2F6FED] flex items-center justify-center group-active:scale-95 transition-all shadow-sm">
+                  <Icon name="sparkle" className="w-[24px] h-[24px]" />
+                </div>
+                <span className="text-[11px] font-bold text-[#5B6B65] text-center leading-tight">AI Help</span>
               </Link>
             </div>
           </div>

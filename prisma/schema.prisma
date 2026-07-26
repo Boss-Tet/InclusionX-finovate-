@@ -91,6 +91,15 @@ enum LoanStatus {
   OVERDUE
 }
 
+enum BankLoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  DISBURSED
+  REPAID
+  DEFAULTED
+}
+
 enum VoteDecision {
   APPROVE
   REJECT
@@ -213,6 +222,7 @@ model User {
   aiMessages            AiMessage[]
   bankAnnotations       BankAnnotation[]
   supportTickets        SupportTicket[]
+  bankLoanApplicationsReviewed BankLoanApplication[]
 
   @@index([phoneNumber])
   @@index([platformRole])
@@ -328,6 +338,7 @@ model VslaGroup {
   healthScores       HealthScore[]
   bankAnnotations    BankAnnotation[]
   chatMessages       ChatMessage[]
+  bankLoanApplications BankLoanApplication[]
 
   @@index([status])
   @@index([inviteCode])
@@ -476,6 +487,34 @@ model LoanRepayment {
 
   @@index([loanId])
   @@map("loan_repayments")
+}
+
+// =============================================================================
+// BANK LOAN APPLICATIONS (Credit Approvals)
+// UUID — externally referenced
+// Represents a VSLA Group applying for a commercial loan from the Bank.
+// =============================================================================
+
+model BankLoanApplication {
+  id              String         @id @default(uuid()) @db.Uuid
+  groupId         String         @db.Uuid
+  officerId       String?        @db.Uuid // The Bank Officer reviewing this
+  amountTambala   Int
+  purpose         String         @db.Text
+  status          BankLoanStatus @default(PENDING)
+  rejectionReason String?        @db.Text
+  score           Int?           // Credit score at time of application
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group   VslaGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  officer User?     @relation(fields: [officerId], references: [id])
+
+  @@index([groupId])
+  @@index([officerId])
+  @@index([status])
+  @@map("bank_loan_applications")
 }
 
 // =============================================================================

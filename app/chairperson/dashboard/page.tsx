@@ -10,6 +10,7 @@ import { UpcomingMeetings } from '@/components/organisms/UpcomingMeetings';
 import { useLoans } from '@/hooks/useLoans';
 import { useGroup } from '@/hooks/useGroup';
 import { useMeetings } from '@/hooks/useMeetings';
+import { useProfile } from '@/hooks/useProfile';
 import { setActiveGroupId } from '@/lib/api/client';
 import { CheckSquare, Users, Activity, Calendar } from 'lucide-react';
 
@@ -23,7 +24,10 @@ export default function ChairpersonDashboardPage() {
   const groupId = getStoredGroupId();
   if (groupId) setActiveGroupId(groupId);
 
-  const { loans, voteLoan } = useLoans({ groupId });
+  const { profile } = useProfile();
+  const callerMemberId = profile?.userId ?? '';
+
+  const { loans, voteLoan } = useLoans({ groupId, callerMemberId });
   const { members, groupHealth, groupName } = useGroup(groupId);
   const { meetings, confirmAttendance } = useMeetings(groupId);
 
@@ -46,7 +50,7 @@ export default function ChairpersonDashboardPage() {
       subtext: `In ${groupName}`,
       icon: <Users className="w-5 h-5 text-emerald-600" />,
       trend: 'up' as const,
-      trendText: '2 new members this cycle',
+      trendText: members.length > 0 ? `${members.length} active members` : 'Loading…',
     },
     {
       label: 'Health Score',

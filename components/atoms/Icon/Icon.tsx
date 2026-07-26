@@ -27,7 +27,8 @@ export type IconName =
   | "search"
   | "trending-up"
   | "trending-down"
-  | "shield-alert";
+  | "shield-alert"
+  | "sparkle";
 
 interface IconProps extends React.SVGProps<SVGSVGElement> {
   name: IconName;
@@ -196,6 +197,13 @@ export const Icon: React.FC<IconProps> = ({ name, className = "", ...props }) =>
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
+        </>
+      )}
+      {name === "sparkle" && (
+        <>
+          <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z" fill="currentColor" stroke="none" />
+          <path d="M19 3l.75 2.25L22 6l-2.25.75L19 9l-.75-2.25L16 6l2.25-.75z" fill="currentColor" stroke="none" />
+          <path d="M5 17l.5 1.5L7 19l-1.5.5L5 21l-.5-1.5L3 19l1.5-.5z" fill="currentColor" stroke="none" />
         </>
       )}
     </svg>

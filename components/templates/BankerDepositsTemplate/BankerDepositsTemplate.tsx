@@ -3,17 +3,14 @@ import React from "react";
 import { BankerSidebar } from "@/components/organisms/BankerSidebar/BankerSidebar";
 import { Icon } from "@/components/atoms/Icon/Icon";
 import { Badge } from "@/components/atoms/Badge/Badge";
-import { TransactionRow } from "@/components/molecules/TransactionRow/TransactionRow";
+import { BankerLedgerEntry, BankerLedgerSummary } from "@/hooks/useBankerLedger";
 
-const deposits = [
-  { group: "Tikondane VSLA",        amount: "MWK 250,000", date: "Today 09:15 AM",    type: "deposit",    method: "Mobile Money" },
-  { group: "Umodzi Farmers Club",   amount: "MWK 180,000", date: "Today 08:40 AM",    type: "deposit",    method: "Bank Transfer" },
-  { group: "Thousand Smiles Group", amount: "MWK 95,000",  date: "Yesterday 03:20 PM",type: "withdrawal", method: "Cash" },
-  { group: "Chikondi Women Group",  amount: "MWK 320,000", date: "Yesterday 11:00 AM",type: "deposit",    method: "Mobile Money" },
-  { group: "Tiwonge Savers",        amount: "MWK 50,000",  date: "23 Jul 2026",       type: "deposit",    method: "Mobile Money" },
-];
+export interface BankerDepositsTemplateProps {
+  deposits: BankerLedgerEntry[];
+  summaryTotals: BankerLedgerSummary;
+}
 
-export const BankerDepositsTemplate: React.FC = () => (
+export const BankerDepositsTemplate: React.FC<BankerDepositsTemplateProps> = ({ deposits, summaryTotals }) => (
   <div className="min-h-screen bg-[#F2F4F8] font-sans antialiased flex flex-col md:flex-row">
     <div className="hidden md:block"><BankerSidebar activePath="/bank-officer/deposits" /></div>
     <div className="flex-1 min-w-0 flex flex-col pb-12">
@@ -28,9 +25,9 @@ export const BankerDepositsTemplate: React.FC = () => (
         {/* Summary tiles */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: "Total Deposits Today",    value: "MWK 845,000", icon: "arrow-down-circle" as const, color: "text-[#16A34A] bg-[#E5F7EA]" },
-            { label: "Pending Reconciliation",  value: "3 Entries",   icon: "doc"              as const, color: "text-[#F97316] bg-[#FEF0E1]" },
-            { label: "Total Ledger Balance",    value: "MWK 32.8M",   icon: "wallet"           as const, color: "text-[#2F6FED] bg-[#E8EFFD]" },
+            { label: "Total Deposits Today",    value: summaryTotals.depositsToday, icon: "arrow-down-circle" as const, color: "text-[#16A34A] bg-[#E5F7EA]" },
+            { label: "Pending Reconciliation",  value: `${summaryTotals.pendingReconciliation} Entries`,   icon: "doc"              as const, color: "text-[#F97316] bg-[#FEF0E1]" },
+            { label: "Total Ledger Balance",    value: summaryTotals.totalBalance,   icon: "wallet"           as const, color: "text-[#2F6FED] bg-[#E8EFFD]" },
           ].map((t, i) => (
             <div key={i} className="bg-white rounded-[16px] p-4.5 border border-[#EBEEF4] shadow-[0_2px_8px_rgba(11,30,58,0.04)] flex items-center gap-3.5">
               <div className={`w-11 h-11 rounded-[12px] flex items-center justify-center shrink-0 ${t.color}`}>
@@ -77,6 +74,13 @@ export const BankerDepositsTemplate: React.FC = () => (
                     <td className="px-5 py-3.5"><Badge variant="green" size="sm" dot>Posted</Badge></td>
                   </tr>
                 ))}
+                {deposits.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center text-[#9AA6BC] text-[13px]">
+                      No ledger entries found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

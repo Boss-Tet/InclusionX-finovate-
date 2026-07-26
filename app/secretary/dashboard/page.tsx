@@ -25,6 +25,10 @@ export default function SecretaryDashboardPage() {
   const completedMeetings = meetings.filter((m) => m.status === 'COMPLETED');
   const scheduledMeetings = meetings.filter((m) => m.status === 'SCHEDULED');
 
+  const nextMeeting = scheduledMeetings.length > 0
+    ? new Date(scheduledMeetings[0].scheduledAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+    : null;
+
   const stats = [
     {
       label: 'Upcoming Meetings',
@@ -32,7 +36,7 @@ export default function SecretaryDashboardPage() {
       subtext: 'Scheduled assemblies this cycle',
       icon: <Calendar className="w-5 h-5 text-emerald-600" />,
       trend: 'neutral' as const,
-      trendText: 'Next on Aug 05',
+      trendText: nextMeeting ? `Next on ${nextMeeting}` : 'No meetings scheduled',
     },
     {
       label: 'Meetings Recorded',

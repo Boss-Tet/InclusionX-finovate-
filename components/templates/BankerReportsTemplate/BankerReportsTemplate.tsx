@@ -3,16 +3,13 @@ import React, { useState } from "react";
 import { BankerSidebar } from "@/components/organisms/BankerSidebar/BankerSidebar";
 import { Icon } from "@/components/atoms/Icon/Icon";
 import { Button } from "@/components/atoms/Button/Button";
-import { Badge } from "@/components/atoms/Badge/Badge";
+import { BankerReportKPI } from "@/hooks/useBankerReports";
 
-const kpis = [
-  { label: "Total Portfolio Value",  value: "MWK 32.8M",  delta: "+8.4% MoM",  color: "text-[#2F6FED] bg-[#E8EFFD]", icon: "wallet"           as const },
-  { label: "Loan Disbursements",     value: "MWK 18.6M",  delta: "+6.7% MoM",  color: "text-[#16A34A] bg-[#E5F7EA]", icon: "hand-coin"        as const },
-  { label: "Repayment Rate",         value: "91%",         delta: "Target: 90%",color: "text-[#16A34A] bg-[#E5F7EA]", icon: "trending-up"      as const },
-  { label: "Active Groups",          value: "22/24",       delta: "2 flagged",  color: "text-[#F97316] bg-[#FEF0E1]", icon: "users"            as const },
-];
+export interface BankerReportsTemplateProps {
+  kpis: BankerReportKPI[];
+}
 
-export const BankerReportsTemplate: React.FC = () => {
+export const BankerReportsTemplate: React.FC<BankerReportsTemplateProps> = ({ kpis }) => {
   const [period, setPeriod] = useState("Q2 2025");
 
   return (
