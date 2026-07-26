@@ -6,10 +6,21 @@ import { BankerSidebar } from "@/components/organisms/BankerSidebar/BankerSideba
 import { StatCard } from "@/components/molecules/StatCard/StatCard";
 import { TopGroupsTable } from "@/components/organisms/TopGroupsTable/TopGroupsTable";
 import { TransactionRow } from "@/components/molecules/TransactionRow/TransactionRow";
+import { BankerGroupSummary, BankerCreditApproval } from "@/hooks/useBanker";
 
 type MobileTab = "dashboard" | "groups" | "members" | "loans" | "reports";
 
-export const BankerDashboardTemplate: React.FC = () => {
+export interface BankerDashboardTemplateProps {
+  groups: BankerGroupSummary[];
+  approvals: BankerCreditApproval[];
+  isLoading: boolean;
+}
+
+export const BankerDashboardTemplate: React.FC<BankerDashboardTemplateProps> = ({
+  groups,
+  approvals,
+  isLoading,
+}) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileTab, setMobileTab] = useState<MobileTab>("dashboard");
   const [activeDateFilter, setActiveDateFilter] = useState("Today, 26 Jul 2026");
@@ -94,15 +105,11 @@ export const BankerDashboardTemplate: React.FC = () => {
                 <div className="flex items-center justify-between mb-3.5">
                   <span className="text-[15px] font-extrabold text-[#182233]">Pending Credit Approvals</span>
                   <span className="text-[11.5px] font-bold text-[#DC2626] bg-[#FDEAEA] px-2.5 py-0.5 rounded-full animate-pulse">
-                    4 Pending
+                    {approvals.filter(a => a.status === 'pending').length} Pending
                   </span>
                 </div>
-                {[
-                  { group: "Chikondi Women Group", amount: "MWK 1,500,000", purpose: "Agricultural Inputs" },
-                  { group: "Umodzi Farmers Club", amount: "MWK 2,000,000", purpose: "Grain Warehouse Capital" },
-                  { group: "Tiwonge Savers", amount: "MWK 800,000", purpose: "Micro-Loan Expansion" },
-                ].map((item) => (
-                  <div key={item.group} className="p-3.5 rounded-[12px] bg-[#F2F4F8] hover:bg-[#E8EFFD]/50 border border-[#EBEEF4] flex items-center justify-between gap-3 mb-2.5 last:mb-0 transition-colors">
+                {approvals.filter(a => a.status === 'pending').slice(0, 3).map((item) => (
+                  <div key={item.id} className="p-3.5 rounded-[12px] bg-[#F2F4F8] hover:bg-[#E8EFFD]/50 border border-[#EBEEF4] flex items-center justify-between gap-3 mb-2.5 last:mb-0 transition-colors">
                     <div>
                       <div className="text-[13px] font-bold text-[#182233]">{item.group}</div>
                       <div className="text-[11.5px] text-[#5C6B85] mt-0.5">{item.purpose} · <span className="font-bold text-[#182233]">{item.amount}</span></div>
@@ -112,6 +119,9 @@ export const BankerDashboardTemplate: React.FC = () => {
                     </button>
                   </div>
                 ))}
+                {approvals.filter(a => a.status === 'pending').length === 0 && (
+                  <div className="text-[13px] text-[#5C6B85] py-4 text-center">No pending approvals</div>
+                )}
               </div>
 
               {/* Recent activity */}

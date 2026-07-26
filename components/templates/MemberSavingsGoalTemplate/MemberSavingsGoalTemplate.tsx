@@ -5,11 +5,15 @@ import React, { useState } from "react";
 import { MemberSidebar } from "@/components/organisms/MemberSidebar/MemberSidebar";
 import { Button } from "@/components/atoms/Button/Button";
 import { Icon } from "@/components/atoms/Icon/Icon";
+import { formatMWK } from "@/lib/utils/money";
 
-export const MemberSavingsGoalTemplate: React.FC = () => {
-  const [goalAmount] = useState(500000);
-  const [saved] = useState(245000);
-  const pct = Math.min(Math.round((saved / goalAmount) * 100), 100);
+export interface MemberSavingsGoalTemplateProps {
+  savedTambala: number;
+}
+
+export const MemberSavingsGoalTemplate: React.FC<MemberSavingsGoalTemplateProps> = ({ savedTambala }) => {
+  const [goalAmountTambala] = useState(50000000); // 500,000 MWK in tambala
+  const pct = Math.min(Math.round((savedTambala / goalAmountTambala) * 100), 100);
 
   return (
     <div className="min-h-screen bg-[#F1F4F2] font-sans antialiased flex flex-col md:flex-row">
@@ -29,8 +33,8 @@ export const MemberSavingsGoalTemplate: React.FC = () => {
           {/* Goal hero card */}
           <div className="bg-gradient-to-r from-[#123A29] to-[#2D7A52] rounded-[20px] p-6 text-white">
             <div className="text-[12.5px] text-[#B9D4C6] font-semibold mb-1">Annual Savings Target 2025</div>
-            <div className="text-[32px] font-extrabold tracking-tight">MWK 500,000</div>
-            <div className="text-[13px] text-[#B9D4C6] mt-1">MWK 245,000 saved · MWK 255,000 remaining</div>
+            <div className="text-[32px] font-extrabold tracking-tight">{formatMWK(goalAmountTambala)}</div>
+            <div className="text-[13px] text-[#B9D4C6] mt-1">{formatMWK(savedTambala)} saved · {formatMWK(Math.max(0, goalAmountTambala - savedTambala))} remaining</div>
 
             {/* Progress bar */}
             <div className="mt-5">

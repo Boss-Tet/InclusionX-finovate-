@@ -5,22 +5,22 @@ import { Icon } from "@/components/atoms/Icon/Icon";
 import { Badge } from "@/components/atoms/Badge/Badge";
 import { Input } from "@/components/atoms/Input/Input";
 import { Avatar } from "@/components/atoms/Avatar/Avatar";
+import { BankerGroupSummary } from "@/hooks/useBanker";
 
 type AvatarTheme = "green" | "blue" | "purple" | "orange" | "red" | "gray";
 
-const groups = [
-  { code: "TVS-001", name: "Tikondane VSLA",         members: 25, savings: "MWK 1,250,000", loans: "MWK 450,000",  status: "active",  risk: "low",    theme: "green"  as AvatarTheme },
-  { code: "CWG-002", name: "Chikondi Women Group",   members: 18, savings: "MWK 875,000",   loans: "MWK 320,000",  status: "active",  risk: "medium", theme: "purple" as AvatarTheme },
-  { code: "UFA-003", name: "Umodzi Farmers Club",    members: 30, savings: "MWK 2,100,000", loans: "MWK 980,000",  status: "active",  risk: "low",    theme: "blue"   as AvatarTheme },
-  { code: "TSA-004", name: "Tiwonge Savers",         members: 22, savings: "MWK 650,000",   loans: "MWK 280,000",  status: "active",  risk: "low",    theme: "orange" as AvatarTheme },
-  { code: "MAP-005", name: "Mapalo Community",        members: 15, savings: "MWK 420,000",   loans: "MWK 390,000",  status: "flagged", risk: "high",   theme: "red"    as AvatarTheme },
-  { code: "TSM-006", name: "Thousand Smiles Group",  members: 28, savings: "MWK 1,560,000", loans: "MWK 510,000",  status: "active",  risk: "low",    theme: "gray"   as AvatarTheme },
-];
+export interface BankerPortfolioTemplateProps {
+  groups: BankerGroupSummary[];
+  isLoading: boolean;
+}
 
 const riskBadge: Record<string, "green" | "orange" | "red"> = { low: "green", medium: "orange", high: "red" };
 const statusBadge: Record<string, "green" | "red"> = { active: "green", flagged: "red" };
 
-export const BankerPortfolioTemplate: React.FC = () => {
+export const BankerPortfolioTemplate: React.FC<BankerPortfolioTemplateProps> = ({
+  groups,
+  isLoading,
+}) => {
   const [search, setSearch] = useState("");
   const filtered = groups.filter(g => g.name.toLowerCase().includes(search.toLowerCase()) || g.code.includes(search));
 
@@ -82,22 +82,39 @@ export const BankerPortfolioTemplate: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((g, i) => (
-                    <tr key={i} className="border-t border-[#F2F4F8] hover:bg-[#F5F7FA] transition-colors">
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar initials={g.code.slice(0,2)} theme={g.theme} size="sm" />
-                          <span className="font-semibold text-[#182233]">{g.name}</span>
+                  {isLoading && (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-[#9AA6BC] text-sm font-medium">
+                        Loading portfolio...
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading && filtered.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-[#9AA6BC] text-sm font-medium">
+                        No groups found matching your search.
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading && filtered.map((g) => (
+                    <tr key={g.code} className="border-t border-[#EBEEF4] hover:bg-[#F8FAFC] transition-colors group cursor-pointer">
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar initials={g.name.substring(0, 2).toUpperCase()} theme={g.theme as AvatarTheme} size="sm" />
+                          <div>
+                            <div className="font-bold text-[#182233] group-hover:text-[#2F6FED] transition-colors">{g.name}</div>
+                            <div className="text-[11px] font-mono text-[#9AA6BC] mt-0.5">{g.code}</div>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-[#9AA6BC] font-mono text-[12px]">{g.code}</td>
-                      <td className="px-5 py-3.5 font-semibold text-[#182233]">{g.members}</td>
-                      <td className="px-5 py-3.5 font-bold text-[#16A34A]">{g.savings}</td>
-                      <td className="px-5 py-3.5 font-semibold text-[#182233]">{g.loans}</td>
-                      <td className="px-5 py-3.5"><Badge variant={riskBadge[g.risk]} size="sm">{g.risk}</Badge></td>
-                      <td className="px-5 py-3.5"><Badge variant={statusBadge[g.status]} size="sm" dot>{g.status}</Badge></td>
-                      <td className="px-5 py-3.5">
-                        <button className="text-[12px] font-bold text-[#2F6FED] hover:underline">View</button>
+                      <td className="px-5 py-3 text-[13px] text-[#5C6B85] font-semibold">{g.members}</td>
+                      <td className="px-5 py-3 text-[13px] font-bold text-[#182233]">{g.savings}</td>
+                      <td className="px-5 py-3 text-[13px] font-bold text-[#182233]">{g.loans}</td>
+                      <td className="px-5 py-3">
+                        <Badge variant={riskBadge[g.risk]} dot size="sm" className="capitalize">{g.risk} Risk</Badge>
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge variant={statusBadge[g.status]} size="sm" className="capitalize">{g.status}</Badge>
                       </td>
                     </tr>
                   ))}

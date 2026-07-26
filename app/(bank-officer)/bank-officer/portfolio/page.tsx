@@ -1,3 +1,8 @@
+'use client';
 import { BankerPortfolioTemplate } from "@/components/templates/BankerPortfolioTemplate/BankerPortfolioTemplate";
-export const metadata = { title: "VSLA Portfolio | VSLA Connect" };
-export default function PortfolioPage() { return <BankerPortfolioTemplate />; }
+import { useBanker } from "@/hooks/useBanker";
+
+export default function PortfolioPage() { 
+  const { groups, isLoading } = useBanker();
+  return <BankerPortfolioTemplate groups={groups} isLoading={isLoading} />; 
+}

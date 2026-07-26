@@ -1,11 +1,17 @@
+'use client';
+
 import React from "react";
 import { BankerDashboardTemplate } from "@/components/templates/BankerDashboardTemplate/BankerDashboardTemplate";
-
-export const metadata = {
-  title: "Bank Officer Dashboard | VSLA Connect",
-  description: "Bank officer dashboard for managing VSLA group portfolios, deposits, and credit approvals",
-};
+import { useBanker } from "@/hooks/useBanker";
 
 export default function BankerDashboardPage() {
-  return <BankerDashboardTemplate />;
+  const { groups, approvals, isLoading } = useBanker();
+
+  return (
+    <BankerDashboardTemplate
+      groups={groups}
+      approvals={approvals}
+      isLoading={isLoading}
+    />
+  );
 }
