@@ -67,7 +67,7 @@ export async function sendFanOutNotification({
 
     try {
       await NotificationsController.sms({
-        to: [user.phoneNumber],
+        to: [user.phoneNumber!],
         message: `${title}: ${message}`,
       });
       await db.notification.update({

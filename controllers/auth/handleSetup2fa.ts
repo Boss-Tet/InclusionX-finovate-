@@ -22,7 +22,7 @@ export async function handleSetup2fa(
 ): Promise<ApiResponse<Setup2faResult>> {
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { phoneNumber: true, twoFactorEnabled: true },
+    select: { phoneNumber: true, email: true, twoFactorEnabled: true },
   });
   if (!user) return { success: false, error: 'User not found.', code: 'NOT_FOUND' };
   if (user.twoFactorEnabled) {
@@ -30,7 +30,9 @@ export async function handleSetup2fa(
   }
 
   // Generate secret — NOT persisted until user confirms via /2fa/enable.
-  const { secret, otpauthUrl } = generateTotpSecret(user.phoneNumber);
+  // Use email as TOTP issuer label (phoneNumber is now optional).
+  const totpLabel = user.phoneNumber ?? user.email ?? userId;
+  const { secret, otpauthUrl } = generateTotpSecret(totpLabel);
 
   // Store the unconfirmed secret temporarily in the user row.
   // We use twoFactorSecret as the staging field; twoFactorEnabled stays false.
