@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api, ApiError } from '@/lib/api/client';
+import { HealthScoreBreakdown } from '@/types/financial';
 
 interface GroupMember {
   id: string;
@@ -32,17 +33,10 @@ interface GroupDetail {
   members: GroupMember[];
 }
 
-interface HealthSummary {
-  groupId: string;
-  score: number;
-  trend: number;
-  label: string;
-}
-
 interface GroupState {
   group: GroupDetail | null;
   members: GroupMember[];
-  groupHealth: HealthSummary | null;
+  groupHealth: HealthScoreBreakdown | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -60,16 +54,16 @@ export function useGroup(groupId: string) {
     if (!groupId) return;
     setState((s) => ({ ...s, isLoading: true, error: null }));
     try {
-      const [group, health] = await Promise.all([
+      const [group, healthTrend] = await Promise.all([
         api.get<GroupDetail>(`/api/groups/${groupId}`),
         api
-          .get<HealthSummary>(`/api/health-score/${groupId}/trend`)
+          .get<HealthScoreBreakdown[]>(`/api/health-score/${groupId}/trend`)
           .catch(() => null), // health score is non-critical
       ]);
       setState({
         group,
         members: group.members ?? [],
-        groupHealth: health,
+        groupHealth: healthTrend && healthTrend.length > 0 ? healthTrend[0] : null,
         isLoading: false,
         error: null,
       });

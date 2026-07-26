@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icon } from "@/components/atoms/Icon/Icon";
+import { Icon, IconName } from "@/components/atoms/Icon/Icon";
 
 export const MobileBottomNav: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,7 +20,7 @@ export const MobileBottomNav: React.FC = () => {
     return false;
   };
 
-  const NavItem = ({ href, icon, label }: { href: string; icon: string; label: string }) => {
+  const NavItem = ({ href, icon, label }: { href: string; icon: IconName; label: string }) => {
     const active = isActive(href);
     return (
       <Link href={href} className="flex flex-col items-center gap-1 group relative pb-2 w-16">

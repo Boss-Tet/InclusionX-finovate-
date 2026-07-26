@@ -50,11 +50,11 @@ export default function ChairpersonDashboardPage() {
     },
     {
       label: 'Health Score',
-      value: groupHealth ? `${groupHealth.score}/1000` : 'N/A',
+      value: groupHealth ? `${groupHealth.score}/100` : 'N/A',
       subtext: 'Group creditworthiness rating',
       icon: <Activity className="w-5 h-5 text-emerald-600" />,
       trend: 'up' as const,
-      trendText: groupHealth ? groupHealth.label : 'Loading…',
+      trendText: groupHealth ? 'Score Up to Date' : 'Loading…',
     },
     {
       label: 'Scheduled Meetings',
@@ -89,9 +89,16 @@ export default function ChairpersonDashboardPage() {
 
         <LoanVotingPanel pendingLoans={pendingLoans} onVote={voteLoan} />
 
-        <GroupDirectory members={members} />
+        <GroupDirectory members={members.map((m) => ({
+          id: m.id,
+          name: m.fullName,
+          phone: m.phoneNumber,
+          role: m.roleInGroup,
+          avatarUrl: m.avatarUrl,
+          email: null,
+        }))} />
 
-        <UpcomingMeetings meetings={meetings} onRSVP={confirmAttendance} />
+        <UpcomingMeetings meetings={meetings} onRSVP={(id) => confirmAttendance(id, '')} />
       </div>
     </ChairpersonShell>
   );

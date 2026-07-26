@@ -76,7 +76,7 @@ export default function SecretaryDashboardPage() {
 
         <DashboardStats stats={stats} columns={3} />
 
-        <UpcomingMeetings meetings={meetings} onRSVP={confirmAttendance} />
+        <UpcomingMeetings meetings={meetings} onRSVP={(id) => confirmAttendance(id, '')} />
 
         {/* Meeting Minutes Panel */}
         {completedMeetings.length > 0 && (

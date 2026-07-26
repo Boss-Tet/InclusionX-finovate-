@@ -3,11 +3,19 @@ import { Card } from '@/components/atoms/Card';
 import { Avatar } from '@/components/atoms/Avatar';
 import { Badge } from '@/components/atoms/Badge';
 import { SearchBar } from '@/components/molecules/SearchBar';
-import { UserProfile } from '@/lib/mock/authMock';
 import { Users, Phone, Mail } from 'lucide-react';
 
+export interface DirectoryMember {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone: string;
+  role: string;
+  avatarUrl?: string | null;
+}
+
 export interface GroupDirectoryProps {
-  members: UserProfile[];
+  members: DirectoryMember[];
 }
 
 export const GroupDirectory: React.FC<GroupDirectoryProps> = ({ members }) => {
@@ -17,7 +25,7 @@ export const GroupDirectory: React.FC<GroupDirectoryProps> = ({ members }) => {
     (m) =>
       m.name.toLowerCase().includes(query.toLowerCase()) ||
       m.role.toLowerCase().includes(query.toLowerCase()) ||
-      m.email.toLowerCase().includes(query.toLowerCase())
+      (m.email || '').toLowerCase().includes(query.toLowerCase())
   );
 
   return (
@@ -42,7 +50,7 @@ export const GroupDirectory: React.FC<GroupDirectoryProps> = ({ members }) => {
             className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 dark:bg-slate-800/40 dark:border-slate-800 space-y-3"
           >
             <div className="flex items-center gap-3">
-              <Avatar name={member.name} src={member.avatarUrl} size="md" />
+              <Avatar name={member.name} src={member.avatarUrl || undefined} size="md" />
               <div className="min-w-0 flex-1">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
                   {member.name}
@@ -55,7 +63,7 @@ export const GroupDirectory: React.FC<GroupDirectoryProps> = ({ members }) => {
 
             <div className="space-y-1 text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200/60 dark:border-slate-800">
               <p className="flex items-center gap-2 truncate">
-                <Mail className="w-3.5 h-3.5" /> {member.email}
+                <Mail className="w-3.5 h-3.5" /> {member.email || 'N/A'}
               </p>
               <p className="flex items-center gap-2 truncate">
                 <Phone className="w-3.5 h-3.5" /> {member.phone}

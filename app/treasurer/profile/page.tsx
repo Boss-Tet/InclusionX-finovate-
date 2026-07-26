@@ -16,7 +16,7 @@ export default function TreasurerProfilePage() {
   return (
     <TreasurerShell>
       <div className="space-y-6 max-w-4xl mx-auto">
-        <ProfileSummary user={profile!} />
+        {profile && <ProfileSummary user={profile} />}
         <Card className="space-y-4">
           <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <Lock className="w-4 h-4 text-emerald-600" />
