@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@/components/atoms/Icon/Icon";
 import { MemberSidebar } from "@/components/organisms/MemberSidebar/MemberSidebar";
 import { Input } from "@/components/atoms/Input/Input";
@@ -13,36 +13,78 @@ interface ChatMessage {
   time: string;
 }
 
+const SYSTEM_INSTRUCTION = `You are a helpful VSLA (Village Savings and Loan Association) financial assistant for members in Malawi. 
+Your role is to:
+- Answer questions about savings, loans, and VSLA rules in simple, clear language
+- Provide financial guidance relevant to rural Malawi communities
+- Support both English and Chichewa (you can respond in the language the user writes in)
+- Help members understand their loan eligibility (typically 3x their savings/shares)
+- Explain meeting procedures, fines, and group governance
+- Be warm, encouraging, and culturally appropriate
+Keep responses concise, practical, and actionable.`;
+
 export const MemberAiAssistantTemplate: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: "1", sender: "ai", text: "Muli bwanji! I am your VSLA AI Assistant. Ask me anything about your savings, loan rules, or financial advice in English or Chichewa.", time: "09:00 AM" },
-    { id: "2", sender: "user", text: "How much loan am I eligible for this month?", time: "09:01 AM" },
-    { id: "3", sender: "ai", text: "Based on your current savings of MWK 48,750 and 25 shares, you are eligible for up to 3x your savings (MWK 146,250) minus your current active loan balance.", time: "09:01 AM" },
+    { id: "1", sender: "ai", text: "Muli bwanji! I am your VSLA AI Assistant. Ask me anything about your savings, loan rules, or financial advice in English or Chichewa.", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
   ]);
   const [inputVal, setInputVal] = useState("");
+  const [isThinking, setIsThinking] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  const handleSend = () => {
-    if (!inputVal.trim()) return;
-    const newMsg: ChatMessage = {
-      id: Date.now().toString(),
-      sender: "user",
-      text: inputVal,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-    setMessages((prev) => [...prev, newMsg]);
+  // Auto-scroll to latest message
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isThinking]);
+
+  const handleSend = async () => {
+    if (!inputVal.trim() || isThinking) return;
+    const userText = inputVal.trim();
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+    const userMsg: ChatMessage = { id: Date.now().toString(), sender: "user", text: userText, time: now };
+    setMessages((prev) => [...prev, userMsg]);
     setInputVal("");
+    setIsThinking(true);
 
-    setTimeout(() => {
+    try {
+      // Build conversation history for the AI (exclude the opening greeting from history)
+      const updatedMessages = [...messages, userMsg];
+      const history = updatedMessages.slice(1).map((m) => ({
+        role: m.sender === "user" ? "user" : "model",
+        parts: [{ text: m.text }],
+      }));
+
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ history, systemInstruction: SYSTEM_INSTRUCTION }),
+      });
+
+      const data = await res.json();
+      const replyText = data.reply || "I'm sorry, I couldn't process your request right now. Please try again.";
+
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: "ai",
-          text: "I have recorded your request. Let me analyze your VSLA ledger and get back to you with exact figures!",
+          text: replyText,
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
-    }, 800);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          text: "Sorry, I'm having trouble connecting right now. Please check your connection and try again.",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   return (
@@ -57,29 +99,51 @@ export const MemberAiAssistantTemplate: React.FC = () => {
             <h1 className="text-[19px] font-extrabold text-[#1B2321]">VSLA AI Financial Assistant</h1>
             <p className="text-[12.5px] text-[#5B6B65] mt-0.5">Instant answers, savings guidance &amp; Chichewa translation</p>
           </div>
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isThinking ? "bg-[#F97316] animate-pulse" : "bg-[#2D7A52]"}`} />
+            <span className="text-[11.5px] font-semibold text-[#5B6B65]">{isThinking ? "Thinking..." : "Online"}</span>
+          </div>
         </header>
 
         <main className="flex-1 p-4 md:p-6 overflow-y-auto flex flex-col gap-3">
           {messages.map((m) => (
             <div key={m.id} className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
+              {m.sender === "ai" && (
+                <div className="w-8 h-8 rounded-full bg-[#2D7A52] flex items-center justify-center shrink-0 mr-2 mt-0.5">
+                  <Icon name="sparkle" className="w-4 h-4 text-white" />
+                </div>
+              )}
               <div className={`max-w-[80%] rounded-[16px] p-4 text-[13.5px] ${m.sender === "user" ? "bg-[#2D7A52] text-white" : "bg-white text-[#1B2321] shadow-xs border border-[#E9EDEA]"}`}>
-                <p>{m.text}</p>
+                <p className="whitespace-pre-wrap leading-relaxed">{m.text}</p>
                 <div className={`text-[10px] mt-1.5 text-right ${m.sender === "user" ? "text-white/70" : "text-[#94A29C]"}`}>{m.time}</div>
               </div>
             </div>
           ))}
+          {isThinking && (
+            <div className="flex justify-start">
+              <div className="w-8 h-8 rounded-full bg-[#2D7A52] flex items-center justify-center shrink-0 mr-2 mt-0.5">
+                <Icon name="sparkle" className="w-4 h-4 text-white" />
+              </div>
+              <div className="bg-white rounded-[16px] p-4 border border-[#E9EDEA] shadow-xs flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-[#2D7A52] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-2 h-2 bg-[#2D7A52] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-2 h-2 bg-[#2D7A52] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
         </main>
 
         <footer className="bg-white border-t border-[#E9EDEA] p-4 flex items-center gap-3 shrink-0">
           <Input
-            placeholder="Type a message or question..."
+            placeholder="Ask about your savings, loans, or anything VSLA..."
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
             theme="green"
             fullWidth
           />
-          <Button theme="green" onClick={handleSend} rightIcon={<Icon name="arrow-right" className="w-4 h-4" />}>
+          <Button theme="green" onClick={handleSend} disabled={isThinking || !inputVal.trim()} rightIcon={<Icon name="arrow-right" className="w-4 h-4" />}>
             Send
           </Button>
         </footer>
@@ -87,3 +151,4 @@ export const MemberAiAssistantTemplate: React.FC = () => {
     </div>
   );
 };
+
