@@ -1,17 +1,14 @@
 import React from 'react';
 import { DashboardShell, NavItem } from './DashboardShell';
-import { MOCK_USERS, UserProfile } from '@/lib/mock/authMock';
+import { useSessionShell } from '@/hooks/useSessionShell';
 import { LayoutDashboard, User, Building2, BarChart2, ShieldCheck } from 'lucide-react';
 
 export interface ShellProps {
   children: React.ReactNode;
-  user?: UserProfile;
 }
 
-export const BankOfficerShell: React.FC<ShellProps> = ({
-  children,
-  user = MOCK_USERS.bank_officer,
-}) => {
+export const BankOfficerShell: React.FC<ShellProps> = ({ children }) => {
+  const { user } = useSessionShell();
   const navItems: NavItem[] = [
     { label: 'Bank Portfolio', href: '/bank-officer/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: 'VSLA Groups Directory', href: '/bank-officer/dashboard#groups', icon: <Building2 className="w-4 h-4" /> },

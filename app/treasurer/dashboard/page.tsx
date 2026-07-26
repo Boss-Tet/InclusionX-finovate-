@@ -53,8 +53,9 @@ const MOCK_LEDGER: LedgerEntryRecord[] = [
 ];
 
 export default function TreasurerDashboardPage() {
-  const { contributions, balance, verifyContribution } = useSavings();
-  const { loans } = useLoans();
+  const groupId = typeof window !== 'undefined' ? localStorage.getItem('vsla_active_group_id') ?? '' : '';
+  const { contributions, approveContribution } = useSavings({ groupId });
+  const { loans } = useLoans({ groupId });
 
   const totalGroupBalance = 48500000; // MWK 485,000.00 (mock)
   const totalLoansDisbursed = loans.reduce((acc, l) => acc + l.principalTambala, 0);
@@ -111,7 +112,7 @@ export default function TreasurerDashboardPage() {
 
         <ContributionTable
           contributions={contributions}
-          onVerify={verifyContribution}
+          onVerify={(id) => approveContribution(id, 'APPROVE')}
         />
 
         <LedgerView entries={MOCK_LEDGER} />

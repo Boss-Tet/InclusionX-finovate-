@@ -10,14 +10,26 @@ import { UpcomingMeetings } from '@/components/organisms/UpcomingMeetings';
 import { useLoans } from '@/hooks/useLoans';
 import { useGroup } from '@/hooks/useGroup';
 import { useMeetings } from '@/hooks/useMeetings';
+import { setActiveGroupId } from '@/lib/api/client';
 import { CheckSquare, Users, Activity, Calendar } from 'lucide-react';
 
+// Chairperson reads their active group from localStorage (set at login / group select).
+function getStoredGroupId(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem('vsla_active_group_id') ?? '';
+}
+
 export default function ChairpersonDashboardPage() {
-  const { loans, voteLoan } = useLoans();
-  const { members, groupHealth } = useGroup();
-  const { meetings, confirmAttendance } = useMeetings();
+  const groupId = getStoredGroupId();
+  if (groupId) setActiveGroupId(groupId);
+
+  const { loans, voteLoan } = useLoans({ groupId });
+  const { members, groupHealth, groupName } = useGroup(groupId);
+  const { meetings, confirmAttendance } = useMeetings(groupId);
 
   const pendingLoans = loans.filter((l) => l.status === 'PENDING');
+  // SCHEDULED maps to what was previously called UPCOMING in mock
+  const scheduledMeetings = meetings.filter((m) => m.status === 'SCHEDULED');
 
   const stats = [
     {
@@ -31,26 +43,26 @@ export default function ChairpersonDashboardPage() {
     {
       label: 'Group Members',
       value: String(members.length),
-      subtext: `In ${groupHealth.groupName}`,
+      subtext: `In ${groupName}`,
       icon: <Users className="w-5 h-5 text-emerald-600" />,
       trend: 'up' as const,
       trendText: '2 new members this cycle',
     },
     {
       label: 'Health Score',
-      value: groupHealth.latestScore ? `${groupHealth.latestScore.score}/100` : 'N/A',
+      value: groupHealth ? `${groupHealth.score}/1000` : 'N/A',
       subtext: 'Group creditworthiness rating',
       icon: <Activity className="w-5 h-5 text-emerald-600" />,
       trend: 'up' as const,
-      trendText: 'AAA Prime Credit Tier',
+      trendText: groupHealth ? groupHealth.label : 'Loading…',
     },
     {
       label: 'Scheduled Meetings',
-      value: String(meetings.filter((m) => m.status === 'UPCOMING').length),
+      value: String(scheduledMeetings.length),
       subtext: 'Upcoming share-out assemblies',
       icon: <Calendar className="w-5 h-5 text-emerald-600" />,
       trend: 'neutral' as const,
-      trendText: 'Next: Aug 05, 2026',
+      trendText: 'Next upcoming assembly',
     },
   ];
 
@@ -68,10 +80,10 @@ export default function ChairpersonDashboardPage() {
 
         <DashboardStats stats={stats} columns={4} />
 
-        {groupHealth.latestScore && (
+        {groupHealth && (
           <HealthScoreChart
-            scoreData={groupHealth.latestScore}
-            groupName={groupHealth.groupName}
+            scoreData={groupHealth}
+            groupName={groupName}
           />
         )}
 
