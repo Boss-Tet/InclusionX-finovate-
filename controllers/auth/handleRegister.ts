@@ -51,7 +51,7 @@ export async function handleRegister(
   const user = await db.user.create({
     data: {
       email,
-      phoneNumber: phoneNumber ?? null,
+      phoneNumber: phoneNumber ?? undefined,
       fullName,
       passwordHash,
       preferredLang,
