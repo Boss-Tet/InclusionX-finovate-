@@ -7,15 +7,24 @@ export const metadata: Metadata = {
     "VSLA Connect by Finovate Malawi empowers village savings and loans associations with digital share tracking, micro-loan management, AI-powered credit scoring, and peer governance tools.",
   keywords: "VSLA, village savings, malawi, financial inclusion, micro-loans, community banking",
   authors: [{ name: "Finovate Malawi" }],
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "VSLA Connect",
     description: "Digital financial inclusion for Village Savings & Loans Associations",
     type: "website",
+    images: [{ url: "/icon-512.png", width: 512, height: 512 }],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#059669",
+  themeColor: "#1E3D28",
 };
 
 import { FloatingLandingChat } from '@/components/organisms/FloatingLandingChat/FloatingLandingChat';
