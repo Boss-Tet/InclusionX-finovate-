@@ -1,5 +1,13 @@
 import db from '@/lib/db';
-import { GroupMember, GroupRole } from '@prisma/client';
+import { GroupMember, GroupRole, PlatformRole } from '@prisma/client';
+
+/** Map GroupRole → the matching PlatformRole (BANK_OFFICER/ADMIN are platform-only, not group roles). */
+const GROUP_ROLE_TO_PLATFORM: Record<GroupRole, PlatformRole> = {
+  MEMBER: PlatformRole.MEMBER,
+  CHAIRPERSON: PlatformRole.CHAIRPERSON,
+  TREASURER: PlatformRole.TREASURER,
+  SECRETARY: PlatformRole.SECRETARY,
+};
 
 export async function updateMemberRole(
   memberId: string,
@@ -13,8 +21,19 @@ export async function updateMemberRole(
 
   if (!member || member.groupId !== groupId) return null;
 
-  return await db.groupMember.update({
-    where: { id: memberId },
-    data: { roleInGroup: newRole },
+  return await db.$transaction(async (tx) => {
+    // Update the in-group role
+    const updated = await tx.groupMember.update({
+      where: { id: memberId },
+      data: { roleInGroup: newRole },
+    });
+
+    // Sync User.platformRole so the correct dashboard is shown after their next login
+    await tx.user.update({
+      where: { id: member.userId },
+      data: { platformRole: GROUP_ROLE_TO_PLATFORM[newRole] },
+    });
+
+    return updated;
   });
 }

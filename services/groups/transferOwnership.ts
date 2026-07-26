@@ -1,12 +1,11 @@
 import db from '@/lib/db';
-import { VslaGroup } from '@prisma/client';
+import { VslaGroup, PlatformRole } from '@prisma/client';
 
 export async function transferOwnership(
   groupId: string,
   currentChairpersonId: string,
   newChairpersonUserId: string
 ): Promise<VslaGroup | null> {
-  // Use a transaction to ensure both roles are updated and the group chairpersonId is updated
   return await db.$transaction(async (tx) => {
     const group = await tx.vslaGroup.findUnique({
       where: { id: groupId },
@@ -32,19 +31,27 @@ export async function transferOwnership(
       throw new Error('Cannot transfer ownership to an inactive member.');
     }
 
-    // Demote current chairperson
+    // Demote current chairperson's in-group role and platform role
     await tx.groupMember.update({
       where: { id: currentChairpersonMember.id },
       data: { roleInGroup: 'MEMBER' },
     });
+    await tx.user.update({
+      where: { id: currentChairpersonId },
+      data: { platformRole: PlatformRole.MEMBER },
+    });
 
-    // Promote new chairperson
+    // Promote new chairperson's in-group role and platform role
     await tx.groupMember.update({
       where: { id: newChairpersonMember.id },
       data: { roleInGroup: 'CHAIRPERSON' },
     });
+    await tx.user.update({
+      where: { id: newChairpersonUserId },
+      data: { platformRole: PlatformRole.CHAIRPERSON },
+    });
 
-    // Update group
+    // Update group's chairpersonId pointer
     return await tx.vslaGroup.update({
       where: { id: groupId },
       data: { chairpersonId: newChairpersonUserId },

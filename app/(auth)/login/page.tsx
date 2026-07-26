@@ -7,9 +7,22 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { AuthShell } from '@/components/templates/AuthShell';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, setActiveGroupId } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
 import { roleToDashboardPath } from '@/lib/auth/session';
+
+/** After a successful login, look up the user's groups and persist the active one. */
+async function hydrateActiveGroup(): Promise<void> {
+  try {
+    const res = await fetch('/api/groups');
+    const json = await res.json();
+    if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+      setActiveGroupId(json.data[0].id);
+    }
+  } catch {
+    // Non-fatal — dashboard will show onboarding if no group found
+  }
+}
 
 /* ─── Validation ───────────────────────────────────────────────── */
 const loginSchema = z.object({
@@ -239,6 +252,8 @@ export default function LoginPage() {
         const meRes = await fetch('/api/auth/me');
         const me = await meRes.json();
         const role: string = me?.data?.platformRole ?? 'MEMBER';
+        // Hydrate active group context before redirect so dashboard hooks have data immediately
+        await hydrateActiveGroup();
         router.push(roleToDashboardPath(role));
       }
     } catch (err) {
@@ -261,6 +276,7 @@ export default function LoginPage() {
       }
       const meRes = await fetch('/api/auth/me');
       const me = await meRes.json();
+      await hydrateActiveGroup();
       router.push(roleToDashboardPath(me?.data?.platformRole ?? 'MEMBER'));
     } catch {
       setTwoFaError('Network error. Please try again.');
