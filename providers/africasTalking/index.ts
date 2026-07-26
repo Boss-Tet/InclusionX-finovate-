@@ -1,13 +1,19 @@
 import AfricasTalking from 'africastalking';
 
-// Initialize Africa's Talking SDK
-// AT_USERNAME = "sandbox" for testing, real username for production
-const at = AfricasTalking({
-  apiKey: process.env.AT_API_KEY!,
-  username: process.env.AT_USERNAME!,
-});
+// Initialize Africa's Talking SDK lazily to prevent Next.js build-time errors
+let _at: any;
+let _sms: any;
 
-const sms = at.SMS;
+function getSms() {
+  if (!_sms) {
+    _at = AfricasTalking({
+      apiKey: process.env.AT_API_KEY || 'dummy',
+      username: process.env.AT_USERNAME || 'sandbox',
+    });
+    _sms = _at.SMS;
+  }
+  return _sms;
+}
 
 export interface SendSmsOptions {
   to: string | string[];  // Phone number(s) in international format, e.g. "+265999123456"
@@ -32,7 +38,7 @@ export async function sendSms({ to, message, senderId }: SendSmsOptions) {
     // Only include 'from' if a senderId is explicitly passed — omit for sandbox
     if (from && from !== 'Sandbox') sendOptions.from = from;
 
-    const result = await sms.send(sendOptions);
+    const result = await getSms().send(sendOptions);
 
     return { success: true, result };
   } catch (error) {

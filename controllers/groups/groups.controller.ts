@@ -1,6 +1,7 @@
 import { createGroup, CreateGroupArgs } from '@/services/groups/createGroup';
 import { joinGroup } from '@/services/groups/joinGroup';
 import { getGroupById } from '@/services/groups/getGroupById';
+import { getMembersByGroup } from '@/services/groups/getMembersByGroup';
 import { updateMemberRole } from '@/services/groups/updateMemberRole';
 import { updateMemberStatus } from '@/services/groups/updateMemberStatus';
 import { leaveGroup } from '@/services/groups/leaveGroup';
@@ -34,5 +35,9 @@ export class GroupsController {
 
   static async transferOwnership(groupId: string, currentChairpersonId: string, newChairpersonUserId: string) {
     return await transferOwnership(groupId, currentChairpersonId, newChairpersonUserId);
+  }
+
+  static async getMembers(groupId: string) {
+    return await getMembersByGroup(groupId);
   }
 }

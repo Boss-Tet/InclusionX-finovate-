@@ -1,5 +1,6 @@
 # VSLA Connect
 
+> **Live Demo:** [https://inclusion-x-finovate-b7tt.vercel.app](https://inclusion-x-finovate-b7tt.vercel.app)
 > **InclusionX** · FINOVATE 2026 · Build for Malawi. Build for the Future.
 
 **Team Name:** InclusionX

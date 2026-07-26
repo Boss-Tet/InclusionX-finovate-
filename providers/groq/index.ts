@@ -1,7 +1,7 @@
 import Groq from 'groq-sdk';
 
-// Initialize the Groq SDK
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Initialize the Groq SDK (use a dummy key if missing to avoid breaking Vercel build phase)
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || 'dummy_key_for_build' });
 
 // Default to Llama 3 70B for strong reasoning, or 8B for extreme speed
 const defaultModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';

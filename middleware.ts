@@ -41,6 +41,13 @@ const PUBLIC_PATHS = [
   '/api/auth/2fa/verify',
   '/api/auth/password-reset/request',
   '/api/auth/password-reset/verify',
+  // External webhook callbacks — third-party services can't provide a session cookie
+  '/api/payments/callback',   // PayChangu payment result webhook
+  '/api/payments/verify',     // PayChangu return URL after hosted payment
+  '/api/ussd',                // Africa's Talking USSD session handler
+  '/api/sms/delivery',        // Africa's Talking SMS delivery report
+  '/api/media/notify',        // Cloudinary upload notification
+  // UI public routes
   '/login',
   '/register',
   '/_next',
