@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { MobileBottomNav } from "@/components/organisms/MobileBottomNav/MobileBottomNav";
 import React, { useState } from "react";
 import { Icon } from "@/components/atoms/Icon/Icon";
 import { MemberSidebar } from "@/components/organisms/MemberSidebar/MemberSidebar";
@@ -64,6 +66,9 @@ export const MemberContributionsTemplate: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    
+      <MobileBottomNav />
+
+</div>
   );
 };

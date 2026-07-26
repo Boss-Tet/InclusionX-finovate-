@@ -1,5 +1,6 @@
 "use client";
 
+import { MobileBottomNav } from "@/components/organisms/MobileBottomNav/MobileBottomNav";
 import React from "react";
 import { MemberSidebar } from "@/components/organisms/MemberSidebar/MemberSidebar";
 import { Icon } from "@/components/atoms/Icon/Icon";
@@ -19,7 +20,7 @@ export const ProfileSubpageTemplate: React.FC<ProfileSubpageTemplateProps> = ({ 
       </div>
 
       {/* ===== MAIN CONTENT ===== */}
-      <div className="flex-1 min-w-0 flex flex-col pb-12">
+      <div className="flex-1 min-w-0 flex flex-col pb-24 md:pb-12">
         {/* Desktop Header */}
         <header className="hidden md:flex bg-white/90 backdrop-blur-md sticky top-0 z-20 border-b border-[#E9EDEA] px-7 py-4 items-center gap-4">
           <Link href="/profile" className="p-2 -ml-2 rounded-full hover:bg-[#F1F4F2] text-[#5B6B65] transition-colors">
@@ -64,6 +65,9 @@ export const ProfileSubpageTemplate: React.FC<ProfileSubpageTemplateProps> = ({ 
           </div>
         </main>
       </div>
+
+      <MobileBottomNav />
+
     </div>
   );
 };
