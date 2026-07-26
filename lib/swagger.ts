@@ -13,7 +13,7 @@ export function getApiDocs() {
         description:
           'API documentation for the VSLA Connect platform. All protected endpoints require the `x-caller-user-id` header to simulate an authenticated session during development.',
       },
-      servers: [{ url: 'http://localhost:3000' }],
+      servers: [{ url: 'https://inclusion-x-finovate.vercel.app' }],
       components: {
         securitySchemes: {
           CallerUserId: {
