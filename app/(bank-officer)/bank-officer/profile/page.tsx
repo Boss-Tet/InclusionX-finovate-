@@ -1,11 +1,13 @@
-import React from "react";
+"use client";
 import { BankerProfileTemplate } from "@/components/templates/BankerProfileTemplate/BankerProfileTemplate";
+import { useProfile } from "@/hooks/useProfile";
 
-export const metadata = {
-  title: "Banker Profile | VSLA Connect",
-  description: "Bank officer profile and branch settings",
-};
+export default function ProfilePage() {
+  const { profile, isLoading } = useProfile();
 
-export default function BankerProfilePage() {
-  return <BankerProfileTemplate />;
+  if (isLoading || !profile) {
+    return <div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-[#2F6FED] border-t-transparent rounded-full animate-spin"></div></div>;
+  }
+
+  return <BankerProfileTemplate profile={profile} />;
 }
