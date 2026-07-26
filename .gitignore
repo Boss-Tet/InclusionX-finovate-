@@ -57,4 +57,5 @@ JABARI_TEAM_NOTE.md
 
 # VSLA Connect UI reference images
 ui_reference/files
+ui_reference/auth_ui
 ui_reference/*.jpg
