@@ -1,11 +1,13 @@
 import React from 'react';
 import { cn } from '@/lib/utils/cn';
-import { Loader2 } from 'lucide-react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
+  theme?: 'green' | 'blue';
+  loading?: boolean;
   isLoading?: boolean;
+  fullWidth?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
@@ -17,7 +19,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       variant = 'primary',
       size = 'md',
+      theme = 'green',
+      loading = false,
       isLoading = false,
+      fullWidth = false,
       leftIcon,
       rightIcon,
       disabled,
@@ -26,20 +31,26 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]';
+    const isSpinning = loading || isLoading;
 
-    const variantStyles = {
-      primary:
-        'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/30 hover:shadow-md hover:shadow-emerald-600/40',
-      secondary:
-        'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/40',
-      outline:
-        'border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800',
-      ghost:
-        'bg-transparent hover:bg-slate-100 text-slate-700 dark:text-slate-300 dark:hover:bg-slate-800',
-      danger:
-        'bg-rose-600 hover:bg-rose-700 text-white shadow-sm shadow-rose-600/30 hover:shadow-md',
+    const baseStyles =
+      'inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] select-none';
+
+    const buildVariantStyles = {
+      green: {
+        primary: 'bg-[#2D7A52] hover:bg-[#1B5E3F] text-white shadow-xs focus:ring-[#2D7A52]',
+        secondary: 'bg-[#E3F3EA] text-[#2D7A52] hover:bg-[#C9EAD5] focus:ring-[#2D7A52]',
+        outline: 'border border-[#2D7A52] bg-white hover:bg-[#E3F3EA] text-[#2D7A52] focus:ring-[#2D7A52]',
+        ghost: 'bg-transparent hover:bg-[#E3F3EA] text-[#2D7A52] focus:ring-[#2D7A52]',
+        danger: 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs focus:ring-rose-600',
+      },
+      blue: {
+        primary: 'bg-[#2F6FED] hover:bg-[#2558C7] text-white shadow-xs focus:ring-[#2F6FED]',
+        secondary: 'bg-[#E8EFFD] text-[#2F6FED] hover:bg-[#D3E2FA] focus:ring-[#2F6FED]',
+        outline: 'border border-[#2F6FED] bg-white hover:bg-[#E8EFFD] text-[#2F6FED] focus:ring-[#2F6FED]',
+        ghost: 'bg-transparent hover:bg-[#E8EFFD] text-[#2F6FED] focus:ring-[#2F6FED]',
+        danger: 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs focus:ring-rose-600',
+      },
     };
 
     const sizeStyles = {
@@ -52,17 +63,26 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         type={type}
-        disabled={disabled || isLoading}
-        className={cn(baseStyles, variantStyles[variant], sizeStyles[size], className)}
+        disabled={disabled || isSpinning}
+        className={cn(
+          baseStyles,
+          buildVariantStyles[theme][variant],
+          sizeStyles[size],
+          fullWidth ? 'w-full' : '',
+          className
+        )}
         {...props}
       >
-        {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin text-current" />
+        {isSpinning ? (
+          <svg className="w-4 h-4 animate-spin shrink-0 text-current" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+            <path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          </svg>
         ) : (
           leftIcon
         )}
         <span>{children}</span>
-        {!isLoading && rightIcon}
+        {!isSpinning && rightIcon}
       </button>
     );
   }
