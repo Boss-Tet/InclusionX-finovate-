@@ -6,6 +6,8 @@ import { Avatar } from "@/components/atoms/Avatar/Avatar";
 import { Input } from "@/components/atoms/Input/Input";
 import { Button } from "@/components/atoms/Button/Button";
 import { Icon } from "@/components/atoms/Icon/Icon";
+import { ChatMessage } from "@/hooks/useChat";
+import { format, parseISO } from "date-fns";
 
 type MsgTheme = "green" | "blue" | "purple" | "orange" | "red" | "gray";
 
@@ -19,28 +21,31 @@ interface Message {
   from: "me" | "them";
 }
 
-const initialMessages: Message[] = [
-  { id: "3", sender: "Agnes Mwale (Chairperson)", initials: "AM", theme: "red", text: "Group vote needed on the withdrawal request from Grace.", time: "Mon", from: "them" },
-  { id: "2", sender: "Kondwani Phiri (Treasurer)", initials: "KP", theme: "blue", text: "All loan repayment records for May have been reconciled.", time: "Yesterday", from: "them" },
-  { id: "1", sender: "Grace Banda (Secretary)", initials: "GB", theme: "purple", text: "Reminder: Our meeting is Sunday at 2:00 PM. Please bring contribution books.", time: "10:15 AM", from: "them" },
-  { id: "a", sender: "Me", initials: "ME", theme: "green", text: "Thanks for the reminder! I will be there.", time: "10:20 AM", from: "me" },
-];
+export interface MemberMessagesTemplateProps {
+  messages: ChatMessage[];
+  isSending: boolean;
+  currentUserId: string;
+  currentUserName: string;
+  onSendMessage: (body: string) => Promise<void>;
+}
 
-export const MemberMessagesTemplate: React.FC = () => {
-  const [chat, setChat] = useState<Message[]>(initialMessages);
+const THEMES = ["green", "blue", "purple", "orange", "red"] as const;
+const getTheme = (id: string) => THEMES[id.charCodeAt(0) % THEMES.length];
+const getInitials = (name: string) =>
+  name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase();
+
+export const MemberMessagesTemplate: React.FC<MemberMessagesTemplateProps> = ({
+  messages,
+  isSending,
+  currentUserId,
+  currentUserName,
+  onSendMessage,
+}) => {
   const [inputMsg, setInputMsg] = useState("");
 
-  const send = () => {
-    if (!inputMsg.trim()) return;
-    setChat(prev => [...prev, { 
-      id: Date.now().toString(), 
-      sender: "Me",
-      initials: "ME",
-      theme: "green",
-      from: "me", 
-      text: inputMsg, 
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) 
-    }]);
+  const send = async () => {
+    if (!inputMsg.trim() || isSending) return;
+    await onSendMessage(inputMsg.trim());
     setInputMsg("");
   };
 
@@ -78,38 +83,49 @@ export const MemberMessagesTemplate: React.FC = () => {
             <span className="bg-black/5 text-[#5B6B65] text-[10.5px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">This Week</span>
           </div>
           
-            {chat.map((msg) => (
-            <div key={msg.id} className={`flex gap-2 md:gap-3 w-full ${msg.from === "me" ? "flex-row-reverse" : "flex-row"}`}>
+            {messages.length === 0 && (
+              <div className="flex items-center justify-center text-sm text-[#94A29C] py-12">
+                No messages yet. Start the conversation!
+              </div>
+            )}
+            {messages.map((msg) => {
+              const isMe = msg.senderId === currentUserId;
+              const name = msg.senderName ?? (isMe ? currentUserName : "Member");
+              const initials = getInitials(name);
+              const theme = getTheme(msg.senderId);
+              return (
+              <div key={msg.id} className={`flex gap-2 md:gap-3 w-full ${isMe ? "flex-row-reverse" : "flex-row"}`}>
               
               {/* Avatar (only for others) */}
-              {msg.from === "them" && (
+              {!isMe && (
                 <div className="shrink-0 mt-auto">
-                  <Avatar initials={msg.initials} theme={msg.theme} size="sm" />
+                  <Avatar initials={initials} theme={theme} size="sm" />
                 </div>
               )}
 
               {/* Message Bubble */}
-              <div className={`flex flex-col ${msg.from === "me" ? "items-end" : "items-start"} max-w-[85%] md:max-w-[70%] overflow-hidden`}>
+              <div className={`flex flex-col ${isMe ? "items-end" : "items-start"} max-w-[85%] md:max-w-[70%] overflow-hidden`}>
                 
                 {/* Sender Name (only for others) */}
-                {msg.from === "them" && (
-                  <span className="text-[11.5px] font-bold text-[#5B6B65] mb-1 ml-1">{msg.sender}</span>
+                {!isMe && (
+                  <span className="text-[11.5px] font-bold text-[#5B6B65] mb-1 ml-1">{name}</span>
                 )}
 
                 <div className={`rounded-[18px] px-4 py-3 text-[14.5px] shadow-sm leading-relaxed overflow-hidden ${
-                  msg.from === "me" 
+                  isMe 
                     ? "bg-[#123A29] text-white rounded-br-[4px]" 
                     : "bg-white text-[#1B2321] border border-[#E9EDEA] rounded-bl-[4px]"
                 }`}>
-                  <p className="break-words whitespace-pre-wrap [word-break:break-word]">{msg.text}</p>
+                  <p className="break-words whitespace-pre-wrap [word-break:break-word]">{msg.body}</p>
                 </div>
                 
-                <span className={`text-[10px] font-semibold mt-1 ${msg.from === "me" ? "mr-1 text-[#94A29C]" : "ml-1 text-[#94A29C]"}`}>
-                  {msg.time}
+                <span className={`text-[10px] font-semibold mt-1 ${isMe ? "mr-1 text-[#94A29C]" : "ml-1 text-[#94A29C]"}`}>
+                  {format(parseISO(msg.createdAt), "h:mm a")}
                 </span>
               </div>
             </div>
-          ))}
+            );
+            })}
         </main>
 
         {/* WhatsApp-Style Input Footer */}

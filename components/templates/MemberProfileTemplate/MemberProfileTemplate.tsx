@@ -9,9 +9,24 @@ import { Button } from "@/components/atoms/Button/Button";
 import { Badge } from "@/components/atoms/Badge/Badge";
 import { Icon, IconName } from "@/components/atoms/Icon/Icon";
 import Link from "next/link";
+import { UserProfile } from "@/hooks/useProfile";
 
-export const MemberProfileTemplate: React.FC = () => {
+export interface MemberProfileTemplateProps {
+  profile: UserProfile | null;
+  groupName: string;
+  isLoading: boolean;
+}
+
+export const MemberProfileTemplate: React.FC<MemberProfileTemplateProps> = ({
+  profile,
+  groupName,
+  isLoading,
+}) => {
   const [mobileTab, setMobileTab] = useState("profile");
+
+  const fullName = profile?.fullName ?? "Member";
+  const phone = profile?.phoneNumber ?? "";
+  const initials = fullName.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase();
 
   return (
     <div className="min-h-screen font-sans antialiased flex flex-col md:flex-row bg-[#F1F4F2]">
@@ -29,29 +44,34 @@ export const MemberProfileTemplate: React.FC = () => {
 
         <main className="p-7 flex flex-col gap-5 max-w-4xl">
           <div className="bg-white rounded-[18px] p-6 shadow-[0_2px_10px_rgba(18,58,41,0.04)] border border-[#E9EDEA] flex items-center gap-5">
-            <Avatar initials="CB" theme="green" size="xl" />
+            <Avatar initials={initials} theme="green" size="xl" />
             <div className="flex-1 text-left">
               <div className="flex items-center gap-2">
-                <h2 className="text-[18px] font-extrabold text-[#1B2321]">Chisomo Banda</h2>
+                <h2 className="text-[18px] font-extrabold text-[#1B2321]">{fullName}</h2>
                 <Badge variant="green" dot>Verified Member</Badge>
               </div>
-              <p className="text-[12.5px] text-[#5B6B65] mt-0.5">Tikondane VSLA · Member ID: TVS-2025-001-MB04</p>
+              <p className="text-[12.5px] text-[#5B6B65] mt-0.5">{groupName || "VSLA Group"} · Member</p>
             </div>
             <Button theme="green" variant="outline">Edit Photo</Button>
           </div>
 
-          <div className="bg-white rounded-[18px] p-6 shadow-[0_2px_10px_rgba(18,58,41,0.04)] border border-[#E9EDEA] flex flex-col gap-4">
-            <h3 className="text-[15px] font-extrabold text-[#1B2321]">Personal Information</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Full Name" defaultValue="Chisomo Banda" theme="green" fullWidth />
-              <Input label="Phone Number" defaultValue="+265 999 123 456" theme="green" fullWidth />
-              <Input label="National ID / Passport" defaultValue="MW-NID-88219" theme="green" fullWidth />
-              <Input label="Home Address" defaultValue="Area 25, Sector 4, Lilongwe" theme="green" fullWidth />
+          {isLoading && (
+            <div className="bg-white rounded-[18px] p-6 border border-[#E9EDEA] text-center text-sm text-[#94A29C]">Loading profile…</div>
+          )}
+          {!isLoading && (
+            <div className="bg-white rounded-[18px] p-6 shadow-[0_2px_10px_rgba(18,58,41,0.04)] border border-[#E9EDEA] flex flex-col gap-4">
+              <h3 className="text-[15px] font-extrabold text-[#1B2321]">Personal Information</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Full Name" defaultValue={fullName} theme="green" fullWidth />
+                <Input label="Phone Number" defaultValue={phone} theme="green" fullWidth />
+                <Input label="Email" defaultValue={profile?.email ?? ""} theme="green" fullWidth />
+                <Input label="Home Address" defaultValue="" theme="green" fullWidth />
+              </div>
+              <div className="flex justify-end mt-2">
+                <Button theme="green">Save Changes</Button>
+              </div>
             </div>
-            <div className="flex justify-end mt-2">
-              <Button theme="green">Save Changes</Button>
-            </div>
-          </div>
+          )}
         </main>
       </div>
 
@@ -79,12 +99,12 @@ export const MemberProfileTemplate: React.FC = () => {
           </div>
           
           <div className="w-[90px] h-[90px] rounded-full bg-gradient-to-tr from-[#123A29] to-[#2D7A52] text-white flex items-center justify-center text-[32px] font-extrabold shadow-[0_4px_12px_rgba(45,122,82,0.3)] border-4 border-white mt-2">
-            CB
+            {initials}
           </div>
 
-          <h2 className="text-[20px] font-extrabold text-[#1B2321] mt-3">Chisomo Banda</h2>
-          <p className="text-[12.5px] text-[#5B6B65] mt-0.5">Tikondane VSLA · Member</p>
-          <p className="text-[12px] font-mono text-[#94A29C] mt-1 bg-[#F1F4F2] px-3 py-1 rounded-full">ID: TVS-2025-001</p>
+          <h2 className="text-[20px] font-extrabold text-[#1B2321] mt-3">{fullName}</h2>
+          <p className="text-[12.5px] text-[#5B6B65] mt-0.5">{groupName || "VSLA Group"} · Member</p>
+          <p className="text-[12px] font-mono text-[#94A29C] mt-1 bg-[#F1F4F2] px-3 py-1 rounded-full">{profile?.userId ? `ID: ${profile.userId.substring(0, 12)}` : "Loading…"}</p>
         </div>
 
         {/* Settings List */}
