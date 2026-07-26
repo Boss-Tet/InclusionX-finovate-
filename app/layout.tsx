@@ -18,6 +18,8 @@ export const viewport: Viewport = {
   themeColor: "#059669",
 };
 
+import { FloatingLandingChat } from '@/components/organisms/FloatingLandingChat/FloatingLandingChat';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,6 +29,7 @@ export default function RootLayout({
     <html lang="en" className="h-full antialiased">
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-950">
         {children}
+        <FloatingLandingChat />
       </body>
     </html>
   );

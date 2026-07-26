@@ -11,3 +11,5 @@ export * from './UpcomingMeetings';
 export * from './LoanList';
 export * from './SavingsHistory';
 export * from './WithdrawalHistory';
+export * from './FloatingLandingChat/FloatingLandingChat';
+export * from './LandingHeader/LandingHeader';
