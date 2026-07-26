@@ -17,18 +17,18 @@ import { NotificationItem } from '@/components/molecules/NotificationItem';
 import { Calendar, FileText, Bell, Plus } from 'lucide-react';
 
 export default function SecretaryDashboardPage() {
-  const { meetings, confirmAttendance } = useMeetings();
+  const groupId = typeof window !== 'undefined' ? localStorage.getItem('vsla_active_group_id') ?? '' : '';
+  const { meetings, confirmAttendance } = useMeetings(groupId);
   const { notifications, markAsRead, unreadCount } = useNotifications();
   const [isMinutesOpen, setIsMinutesOpen] = useState(false);
-  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
 
   const completedMeetings = meetings.filter((m) => m.status === 'COMPLETED');
-  const upcomingMeetings = meetings.filter((m) => m.status === 'UPCOMING');
+  const scheduledMeetings = meetings.filter((m) => m.status === 'SCHEDULED');
 
   const stats = [
     {
       label: 'Upcoming Meetings',
-      value: String(upcomingMeetings.length),
+      value: String(scheduledMeetings.length),
       subtext: 'Scheduled assemblies this cycle',
       icon: <Calendar className="w-5 h-5 text-emerald-600" />,
       trend: 'neutral' as const,
@@ -76,7 +76,7 @@ export default function SecretaryDashboardPage() {
 
         <DashboardStats stats={stats} columns={3} />
 
-        <UpcomingMeetings meetings={meetings} onRSVP={confirmAttendance} />
+        <UpcomingMeetings meetings={meetings} onRSVP={(id) => confirmAttendance(id, '')} />
 
         {/* Meeting Minutes Panel */}
         {completedMeetings.length > 0 && (
@@ -93,13 +93,13 @@ export default function SecretaryDashboardPage() {
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">{m.title}</h4>
-                    <Badge variant="neutral">{m.date}</Badge>
+                    <Badge variant="neutral">{new Date(m.scheduledAt).toLocaleDateString()}</Badge>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    {m.minutes || 'Minutes not yet recorded'}
+                    {m.agendaNotes || 'Minutes not yet recorded'}
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Attendance: {m.attendeesCount}/{m.totalMembers} members present
+                    Location: {m.location ?? 'TBD'}
                   </p>
                 </div>
               ))}

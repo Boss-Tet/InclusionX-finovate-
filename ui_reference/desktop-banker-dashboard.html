@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VLSI Connect — Banker Dashboard (Desktop)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-900:#0B1E3A;
+    --navy-800:#122A4D;
+    --navy-700:#1B3B69;
+    --blue-600:#2F6FED;
+    --blue-500:#3B82F6;
+    --blue-100:#E8EFFD;
+    --green-600:#16A34A;
+    --green-100:#E5F7EA;
+    --purple-600:#8B5CF6;
+    --purple-100:#F1ECFE;
+    --orange-600:#F97316;
+    --orange-100:#FEF0E1;
+    --red-600:#DC2626;
+    --red-100:#FDEAEA;
+    --gray-500:#AEB8CC;
+    --bg:#F2F4F8;
+    --card:#FFFFFF;
+    --ink:#182233;
+    --ink-soft:#5C6B85;
+    --ink-faint:#9AA6BC;
+    --line:#EBEEF4;
+    --radius-lg:16px;
+    --radius-md:12px;
+    --shadow-card:0 2px 10px rgba(11,30,58,0.05);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;}
+  .icon{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:middle;}
+  a{text-decoration:none; color:inherit;}
+
+  .app-shell{display:flex; min-height:100vh;}
+
+  /* ---- Sidebar ---- */
+  .sidebar{width:236px; flex-shrink:0; background:linear-gradient(180deg, var(--navy-900), var(--navy-800)); color:#fff; padding:20px 14px; display:flex; flex-direction:column;}
+  .side-brand{display:flex; align-items:center; gap:10px; padding:6px 8px 22px;}
+  .side-logo{width:34px; height:34px; border-radius:9px; background:rgba(255,255,255,0.14); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .side-logo svg{width:18px;height:18px;}
+  .side-brand-name{font-size:14px; font-weight:800;}
+  .side-brand-name span{color:#5B9CFF;}
+
+  .nav-group{flex:1;}
+  .nav-item{display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; margin-bottom:2px; font-size:13.2px; font-weight:600; color:#AEBBD6;}
+  .nav-item svg{width:16.5px;height:16.5px; flex-shrink:0;}
+  .nav-item.active{background:#fff; color:var(--navy-800);}
+  .nav-chevron{margin-left:auto; opacity:.7;}
+  .nav-chevron svg{width:13px;height:13px;}
+  .nav-badge{margin-left:auto; background:var(--red-600); color:#fff; font-size:10px; font-weight:700; padding:1px 7px; border-radius:20px;}
+  .nav-footer{border-top:1px solid rgba(255,255,255,0.12); padding-top:10px; margin-top:8px;}
+  .nav-item.logout{color:#F3A79C;}
+
+  /* ---- Main ---- */
+  .main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
+  .topbar{background:var(--card); border-bottom:1px solid var(--line); padding:14px 26px; display:flex; align-items:center; justify-content:space-between; gap:20px;}
+  .search-box{flex:1; max-width:420px; display:flex; align-items:center; gap:9px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:9px 14px;}
+  .search-box svg{width:16px;height:16px; color:var(--ink-faint);}
+  .search-box input{border:none; outline:none; background:transparent; font-size:13px; font-family:inherit; width:100%; color:var(--ink);}
+  .top-right{display:flex; align-items:center; gap:18px; flex-shrink:0;}
+  .bell-wrap{position:relative; color:var(--ink-soft);}
+  .bell-wrap svg{width:20px;height:20px;}
+  .badge-dot{position:absolute; top:-6px; right:-7px; background:var(--red-600); color:#fff; font-size:9.5px; font-weight:700; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff;}
+  .user-chip{display:flex; align-items:center; gap:9px;}
+  .user-avatar{width:36px; height:36px; border-radius:50%; background:var(--blue-600); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px;}
+  .user-name{font-size:13px; font-weight:700;}
+  .user-role{font-size:11px; color:var(--ink-faint);}
+  .user-chip svg{width:13px;height:13px; color:var(--ink-faint); margin-left:2px;}
+
+  .content{padding:22px 26px 40px; display:flex; flex-direction:column; gap:16px;}
+
+  /* ---- Slim stat cards ---- */
+  .stat-row-6{display:grid; grid-template-columns:repeat(6,1fr); gap:14px;}
+  .stat-slim{background:var(--card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:14px;}
+  .stat-slim .lbl{font-size:11px; color:var(--ink-soft); font-weight:600;}
+  .stat-slim .val{font-size:17px; font-weight:800; margin-top:6px; line-height:1.2;}
+  .stat-slim .delta{display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; margin-top:7px;}
+  .stat-slim .delta svg{width:11px;height:11px;}
+  .delta.up{color:var(--green-600);}
+  .delta.down{color:var(--red-600);}
+  .delta.warn{color:var(--orange-600);}
+  .delta.alert{color:var(--red-600);}
+
+  /* ---- Cards ---- */
+  .card{background:var(--card); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); padding:20px;}
+  .card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .card-title{font-size:15px; font-weight:800;}
+  .card-link{font-size:12.5px; font-weight:700; color:var(--blue-600);}
+  .mini-select{font-size:11.5px; font-weight:600; color:var(--ink-soft); display:flex; align-items:center; gap:4px; border:1px solid var(--line); padding:5px 10px; border-radius:8px;}
+  .mini-select svg{width:11px;height:11px;}
+
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .three-col{display:grid; grid-template-columns:1.25fr 0.85fr 1fr; gap:16px; align-items:stretch;}
+
+  .list-row{display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line);}
+  .list-row:last-child{border-bottom:none; padding-bottom:0;}
+  .row-icon{width:36px; height:36px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .row-icon svg{width:16px;height:16px;}
+  .row-icon.blue{background:var(--blue-100); color:var(--blue-600);}
+  .row-icon.green{background:var(--green-100); color:var(--green-600);}
+  .row-icon.red{background:var(--red-100); color:var(--red-600);}
+  .row-icon.purple{background:var(--purple-100); color:var(--purple-600);}
+  .row-icon.gray{background:#EEF0F4; color:#8A93A6;}
+  .row-body{flex:1; min-width:0;}
+  .row-title{font-size:13px; font-weight:700;}
+  .row-sub{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
+  .row-time{font-size:11px; color:var(--ink-faint); white-space:nowrap;}
+
+  .approval-row{display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line);}
+  .approval-row:last-child{border-bottom:none; padding-bottom:0;}
+  .approval-num{font-size:16px; font-weight:800; width:26px; flex-shrink:0;}
+  .approval-body{flex:1;}
+  .approval-title{font-size:13px; font-weight:700;}
+  .approval-sub{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
+  .approval-sub.amt{color:var(--ink-soft); font-weight:600;}
+
+  /* ---- Table ---- */
+  table{width:100%; border-collapse:collapse;}
+  thead th{text-align:left; font-size:11px; color:var(--ink-faint); font-weight:700; text-transform:uppercase; letter-spacing:.3px; padding-bottom:10px; border-bottom:1px solid var(--line);}
+  tbody td{padding:12px 4px; font-size:13px; border-bottom:1px solid var(--line);}
+  tbody tr:last-child td{border-bottom:none;}
+  .rank{width:22px; height:22px; border-radius:6px; background:var(--blue-100); color:var(--blue-600); font-weight:800; font-size:11.5px; display:flex; align-items:center; justify-content:center;}
+  .group-cell{display:flex; align-items:center; gap:10px;}
+  .group-name{font-weight:700;}
+  .growth-up{color:var(--green-600); font-weight:700; display:flex; align-items:center; gap:3px;}
+  .growth-up svg{width:11px;height:11px;}
+
+  /* ---- Donut ---- */
+  .donut-wrap{display:flex; flex-direction:column; align-items:center; gap:16px;}
+  .donut-legend{width:100%; display:flex; flex-direction:column; gap:10px;}
+  .donut-legend-item{display:flex; align-items:center; justify-content:space-between; font-size:12.5px; font-weight:600; color:var(--ink-soft);}
+  .donut-legend-left{display:flex; align-items:center; gap:8px;}
+  .dot{width:9px; height:9px; border-radius:50%;}
+
+  /* ---- Announcements ---- */
+  .announce-row{display:flex; gap:11px; padding:11px 0; border-bottom:1px solid var(--line);}
+  .announce-row:last-child{border-bottom:none; padding-bottom:0;}
+  .announce-icon{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .announce-icon svg{width:15px;height:15px;}
+  .announce-title{font-size:12.5px; font-weight:700;}
+  .announce-sub{font-size:11.5px; color:var(--ink-faint); margin-top:3px; line-height:1.4;}
+</style>
+</head>
+<body>
+
+<!-- ============== SVG ICON SPRITE ============== -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-logo" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2.5 20c0-3.6 2.9-6.4 6.5-6.4S15.5 16.4 15.5 20"/><circle cx="17" cy="9" r="2.3"/><path d="M17.5 13.6c2.6.4 4.5 2.6 4.5 5.4"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.4 6.5-6.4S15.5 16.4 15.5 20"/><circle cx="17" cy="9" r="2.4"/><path d="M17.5 13.6c2.6.4 4.5 2.6 4.5 5.4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></symbol>
+    <symbol id="i-exchange" viewBox="0 0 24 24"><path d="M3 8h14M17 8l-3.5-3.5M17 8l-3.5 3.5"/><path d="M21 16H7M7 16l3.5-3.5M7 16l3.5 3.5"/></symbol>
+    <symbol id="i-hand-coin" viewBox="0 0 24 24"><circle cx="8" cy="7" r="3.4"/><path d="M2.5 18c0-3 2.5-5.4 5.5-5.4s5.5 2.4 5.5 5.4"/><path d="M14 15l4.5 1.2c1 .3 1.5 1.4.9 2.2-.5.7-1.4.9-2.2.6l-3.8-1.4"/><path d="M17 13.5l3-1a1.4 1.4 0 011.7 2l-2 1.8"/></symbol>
+    <symbol id="i-arrow-up-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 16.5v-9"/><path d="M8 11.5l4-4 4 4"/></symbol>
+    <symbol id="i-bar-chart" viewBox="0 0 24 24"><rect x="4" y="11" width="4" height="9" rx="1"/><rect x="10" y="5" width="4" height="15" rx="1"/><rect x="16" y="14" width="4" height="6" rx="1"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 01-8.5 8.4 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.4 8.4 0 0112.5 3a8.5 8.5 0 018.5 8.5z"/></symbol>
+    <symbol id="i-headset" viewBox="0 0 24 24"><path d="M4 14a8 8 0 0116 0"/><rect x="3" y="14" width="4" height="6" rx="1.4"/><rect x="17" y="14" width="4" height="6" rx="1.4"/><path d="M20 15v2.5a4 4 0 01-4 4h-2.3"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-trend-up" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+    <symbol id="i-trend-down" viewBox="0 0 24 24"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.5l8 3.6v5.6c0 5.2-3.5 8.7-8 10-4.5-1.3-8-4.8-8-10V6.1z"/><path d="M8.7 12l2.3 2.3 4.3-4.6"/></symbol>
+    <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 00-5.2 5.2L4 17l3 3 5.5-5.5a4 4 0 005.2-5.2l-2 2-2.6-.6-.6-2.6z"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 10v4h4l6 4V6l-6 4H3z"/><path d="M16.5 8.5a5 5 0 010 7"/></symbol>
+  </defs>
+</svg>
+
+<div class="app-shell">
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="side-brand">
+      <div class="side-logo"><svg class="icon"><use href="#i-logo"/></svg></div>
+      <div class="side-brand-name">VLSI <span>CONNECT</span></div>
+    </div>
+    <nav class="nav-group">
+      <div class="nav-item active"><svg class="icon"><use href="#i-grid"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-users"/></svg>Groups<span class="nav-chevron"><svg class="icon"><use href="#i-chevron-right"/></svg></span></div>
+      <div class="nav-item"><svg class="icon"><use href="#i-user"/></svg>Members</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-exchange"/></svg>Transactions<span class="nav-chevron"><svg class="icon"><use href="#i-chevron-right"/></svg></span></div>
+      <div class="nav-item"><svg class="icon"><use href="#i-hand-coin"/></svg>Loans</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-arrow-up-circle"/></svg>Withdrawals</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-bar-chart"/></svg>Reports &amp; Analytics</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-chat"/></svg>Messages</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-headset"/></svg>Support Tickets<span class="nav-badge">4</span></div>
+      <div class="nav-item"><svg class="icon"><use href="#i-gear"/></svg>System Settings</div>
+    </nav>
+    <div class="nav-footer">
+      <div class="nav-item logout"><svg class="icon"><use href="#i-logout"/></svg>Logout</div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-col">
+    <header class="topbar">
+      <div class="search-box">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <input placeholder="Search groups, members, transactions..." readonly>
+      </div>
+      <div class="top-right">
+        <span class="bell-wrap"><svg class="icon"><use href="#i-bell"/></svg><span class="badge-dot">6</span></span>
+        <div class="user-chip">
+          <div class="user-avatar">EP</div>
+          <div>
+            <div class="user-name">Emma Phiri</div>
+            <div class="user-role">Bank Officer</div>
+          </div>
+          <svg class="icon"><use href="#i-chevron-down"/></svg>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- 6 slim stat cards -->
+      <div class="stat-row-6">
+        <div class="stat-slim">
+          <div class="lbl">Total Groups</div>
+          <div class="val">128</div>
+          <div class="delta up"><svg class="icon"><use href="#i-trend-up"/></svg>12 this month</div>
+        </div>
+        <div class="stat-slim">
+          <div class="lbl">Total Members</div>
+          <div class="val">2,356</div>
+          <div class="delta up"><svg class="icon"><use href="#i-trend-up"/></svg>156 this month</div>
+        </div>
+        <div class="stat-slim">
+          <div class="lbl">Total Savings (All Groups)</div>
+          <div class="val">MWK 312.45M</div>
+          <div class="delta up"><svg class="icon"><use href="#i-trend-up"/></svg>8.5% vs last month</div>
+        </div>
+        <div class="stat-slim">
+          <div class="lbl">Total Loans Outstanding</div>
+          <div class="val">MWK 78.62M</div>
+          <div class="delta down"><svg class="icon"><use href="#i-trend-down"/></svg>2.3% vs last month</div>
+        </div>
+        <div class="stat-slim">
+          <div class="lbl">Pending Withdrawals</div>
+          <div class="val">23</div>
+          <div class="delta warn">Requires approval</div>
+        </div>
+        <div class="stat-slim">
+          <div class="lbl">Open Support Tickets</div>
+          <div class="val">9</div>
+          <div class="delta alert">Requires attention</div>
+        </div>
+      </div>
+
+      <!-- Savings overview chart -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Savings Overview</span>
+          <span class="mini-select">This Month <svg class="icon"><use href="#i-chevron-down"/></svg></span>
+        </div>
+        <svg viewBox="0 0 1160 200" width="100%" height="200">
+          <line x1="0" y1="10"  x2="1160" y2="10"  stroke="#EEF1F6" stroke-width="1"/>
+          <line x1="0" y1="58"  x2="1160" y2="58"  stroke="#EEF1F6" stroke-width="1"/>
+          <line x1="0" y1="106" x2="1160" y2="106" stroke="#EEF1F6" stroke-width="1"/>
+          <line x1="0" y1="154" x2="1160" y2="154" stroke="#EEF1F6" stroke-width="1"/>
+          <text x="4" y="14"  font-size="10" fill="#9AA6BC" font-family="Inter">400M</text>
+          <text x="4" y="62"  font-size="10" fill="#9AA6BC" font-family="Inter">265M</text>
+          <text x="4" y="110" font-size="10" fill="#9AA6BC" font-family="Inter">130M</text>
+          <text x="4" y="158" font-size="10" fill="#9AA6BC" font-family="Inter">0</text>
+          <polygon fill="#DCE9FF" opacity="0.6"
+            points="60,175 220,150 380,158 540,120 700,95 860,60 1020,35 1120,20 1120,180 60,180"/>
+          <polyline fill="none" stroke="#2F6FED" stroke-width="3"
+            points="60,175 220,150 380,158 540,120 700,95 860,60 1020,35 1120,20"/>
+          <g fill="#2F6FED">
+            <circle cx="60" cy="175" r="3.5"/><circle cx="220" cy="150" r="3.5"/><circle cx="380" cy="158" r="3.5"/>
+            <circle cx="540" cy="120" r="3.5"/><circle cx="700" cy="95" r="3.5"/><circle cx="860" cy="60" r="3.5"/>
+            <circle cx="1020" cy="35" r="3.5"/><circle cx="1120" cy="20" r="3.5"/>
+          </g>
+          <text x="60"   y="196" font-size="10" fill="#9AA6BC" text-anchor="middle" font-family="Inter">1 May</text>
+          <text x="380"  y="196" font-size="10" fill="#9AA6BC" text-anchor="middle" font-family="Inter">10 May</text>
+          <text x="700"  y="196" font-size="10" fill="#9AA6BC" text-anchor="middle" font-family="Inter">20 May</text>
+          <text x="1120" y="196" font-size="10" fill="#9AA6BC" text-anchor="middle" font-family="Inter">31 May</text>
+        </svg>
+      </div>
+
+      <!-- Recent activities / pending approvals -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Recent Activities</span><span class="card-link">View all</span></div>
+          <div class="list-row">
+            <div class="row-icon blue"><svg class="icon"><use href="#i-users"/></svg></div>
+            <div class="row-body"><div class="row-title">New Group Registered</div><div class="row-sub">Chisomo VSLA</div></div>
+            <div class="row-time">May 25, 2026 · 10:15 AM</div>
+          </div>
+          <div class="list-row">
+            <div class="row-icon green"><svg class="icon"><use href="#i-hand-coin"/></svg></div>
+            <div class="row-body"><div class="row-title">Loan Approved</div><div class="row-sub">Tikondane VSLA · MWK 500,000</div></div>
+            <div class="row-time">May 25, 2026 · 09:40 AM</div>
+          </div>
+          <div class="list-row">
+            <div class="row-icon red"><svg class="icon"><use href="#i-lock"/></svg></div>
+            <div class="row-body"><div class="row-title">Withdrawal Approved</div><div class="row-sub">Chisomo VSLA · MWK 120,000</div></div>
+            <div class="row-time">May 24, 2026 · 04:30 PM</div>
+          </div>
+          <div class="list-row">
+            <div class="row-icon purple"><svg class="icon"><use href="#i-shield"/></svg></div>
+            <div class="row-body"><div class="row-title">Member KYC Verified</div><div class="row-sub">Grace Mwale</div></div>
+            <div class="row-time">May 24, 2026 · 11:20 AM</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">Pending Approvals</span><span class="card-link">View all</span></div>
+          <div class="approval-row">
+            <div class="approval-num">7</div>
+            <div class="approval-body"><div class="approval-title">Loan Requests</div><div class="approval-sub amt">MWK 4,250,000</div></div>
+            <svg class="icon" style="color:var(--ink-faint)"><use href="#i-chevron-right"/></svg>
+          </div>
+          <div class="approval-row">
+            <div class="approval-num">12</div>
+            <div class="approval-body"><div class="approval-title">Withdrawal Requests</div><div class="approval-sub amt">MWK 2,180,000</div></div>
+            <svg class="icon" style="color:var(--ink-faint)"><use href="#i-chevron-right"/></svg>
+          </div>
+          <div class="approval-row">
+            <div class="approval-num">3</div>
+            <div class="approval-body"><div class="approval-title">New Group Acquisitions</div><div class="approval-sub">Review group details</div></div>
+            <svg class="icon" style="color:var(--ink-faint)"><use href="#i-chevron-right"/></svg>
+          </div>
+          <div class="approval-row">
+            <div class="approval-num">18</div>
+            <div class="approval-body"><div class="approval-title">New Members</div><div class="approval-sub">Pending KYC verification</div></div>
+            <svg class="icon" style="color:var(--ink-faint)"><use href="#i-chevron-right"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top performing groups / donut / announcements -->
+      <div class="three-col">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Top Performing Groups</span></div>
+          <table>
+            <thead><tr><th>#</th><th>Group Name</th><th>Members</th><th>Total Savings</th><th>Growth</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="rank">1</span></td>
+                <td class="group-name">Tikondane VSLA</td>
+                <td>35</td>
+                <td>MWK 25,450,000</td>
+                <td><span class="growth-up"><svg class="icon"><use href="#i-trend-up"/></svg>15.2%</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank">2</span></td>
+                <td class="group-name">Chisomo Chilimba</td>
+                <td>28</td>
+                <td>MWK 18,750,000</td>
+                <td><span class="growth-up"><svg class="icon"><use href="#i-trend-up"/></svg>12.9%</span></td>
+              </tr>
+              <tr>
+                <td><span class="rank">3</span></td>
+                <td class="group-name">Limbikani Group</td>
+                <td>32</td>
+                <td>MWK 16,200,000</td>
+                <td><span class="growth-up"><svg class="icon"><use href="#i-trend-up"/></svg>10.3%</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">Support Tickets Overview</span></div>
+          <div class="donut-wrap">
+            <svg viewBox="0 0 120 120" width="150" height="150">
+              <g transform="rotate(-90 60 60)">
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#EEF1F6" stroke-width="16"/>
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#3B82F6" stroke-width="16" stroke-dasharray="124.4 158.3" stroke-dashoffset="0"/>
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#F97316" stroke-width="16" stroke-dasharray="93.3 189.4" stroke-dashoffset="-124.4"/>
+                <circle cx="60" cy="60" r="45" fill="none" stroke="#16A34A" stroke-width="16" stroke-dasharray="62.2 220.5" stroke-dashoffset="-217.7"/>
+              </g>
+              <text x="60" y="57" text-anchor="middle" font-size="22" font-weight="800" fill="#182233" font-family="Inter">9</text>
+              <text x="60" y="73" text-anchor="middle" font-size="10" fill="#9AA6BC" font-family="Inter">Total</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="donut-legend-item"><span class="donut-legend-left"><span class="dot" style="background:#3B82F6"></span>Open</span>4 (44%)</div>
+              <div class="donut-legend-item"><span class="donut-legend-left"><span class="dot" style="background:#F97316"></span>In Progress</span>3 (33%)</div>
+              <div class="donut-legend-item"><span class="donut-legend-left"><span class="dot" style="background:#16A34A"></span>Resolved</span>2 (22%)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">System Announcements</span><span class="card-link">View all</span></div>
+          <div class="announce-row">
+            <div class="announce-icon" style="background:#EEF0F4; color:#6B7690"><svg class="icon"><use href="#i-wrench"/></svg></div>
+            <div>
+              <div class="announce-title">System Maintenance</div>
+              <div class="announce-sub">Scheduled maintenance on 1st June 2026 from 12:00 AM – 2:00 AM.</div>
+            </div>
+          </div>
+          <div class="announce-row">
+            <div class="announce-icon" style="background:var(--blue-100); color:var(--blue-600)"><svg class="icon"><use href="#i-megaphone"/></svg></div>
+            <div>
+              <div class="announce-title">New Feature: Bulk SMS</div>
+              <div class="announce-sub">You can now message all group members at once.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

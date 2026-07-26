@@ -1,17 +1,14 @@
 import React from 'react';
 import { DashboardShell, NavItem } from './DashboardShell';
-import { MOCK_USERS, UserProfile } from '@/lib/mock/authMock';
+import { useSessionShell } from '@/hooks/useSessionShell';
 import { LayoutDashboard, User, CheckSquare, Users, Award } from 'lucide-react';
 
 export interface ShellProps {
   children: React.ReactNode;
-  user?: UserProfile;
 }
 
-export const ChairpersonShell: React.FC<ShellProps> = ({
-  children,
-  user = MOCK_USERS.chairperson,
-}) => {
+export const ChairpersonShell: React.FC<ShellProps> = ({ children }) => {
+  const { user } = useSessionShell();
   const navItems: NavItem[] = [
     { label: 'Governance Overview', href: '/chairperson/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: 'Pending Approvals', href: '/chairperson/dashboard#approvals', icon: <CheckSquare className="w-4 h-4" /> },

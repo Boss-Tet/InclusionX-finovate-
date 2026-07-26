@@ -1,44 +1,113 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  MOCK_CONTRIBUTIONS,
-  MOCK_MEMBER_BALANCES,
-  MOCK_SAVINGS_HISTORY,
-} from '@/lib/mock/savingsMock';
-import { ContributionRecord } from '@/types/financial';
+/**
+ * hooks/useSavings.ts — real API integration
+ *
+ * GET  /api/savings?groupId=&memberId= → member balance (when memberId provided)
+ * GET  /api/savings?groupId=           → contribution history list
+ * POST /api/savings                    → log a contribution (Treasurer only)
+ * PATCH /api/savings/[id]              → approve/reject contribution (Chairperson only)
+ */
 
-export function useSavings(memberId: string = 'usr-mem-01') {
-  const [contributions, setContributions] = useState<ContributionRecord[]>(MOCK_CONTRIBUTIONS);
-  const [balance, setBalance] = useState(MOCK_MEMBER_BALANCES);
+import { useState, useEffect, useCallback } from 'react';
+import { api, ApiError } from '@/lib/api/client';
+import type { ContributionRecord } from '@/types/financial';
 
-  const addContribution = (amountTambala: number, method: 'CASH' | 'MOBILE_MONEY' | 'CARD') => {
-    const newContrib: ContributionRecord = {
-      id: `contrib-${Date.now()}`,
-      groupId: 'grp-001',
-      memberId,
-      amountTambala,
-      method,
-      status: 'PENDING',
-      cyclePeriod: '2026-07',
-      recordedById: memberId,
-      approvedById: null,
-      createdAt: new Date(),
-    };
-    setContributions((prev) => [newContrib, ...prev]);
-  };
+interface UseSavingsOptions {
+  groupId: string;
+  memberId?: string;
+}
 
-  const verifyContribution = (id: string) => {
-    setContributions((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: 'APPROVED' as const } : c))
-    );
-  };
+interface SavingsState {
+  contributions: ContributionRecord[];
+  balanceTambala: number | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export function useSavings({ groupId, memberId }: UseSavingsOptions) {
+  const [state, setState] = useState<SavingsState>({
+    contributions: [],
+    balanceTambala: null,
+    isLoading: true,
+    error: null,
+  });
+
+  const fetchSavings = useCallback(async () => {
+    if (!groupId) return;
+    setState((s) => ({ ...s, isLoading: true, error: null }));
+    try {
+      const params = new URLSearchParams({ groupId });
+      if (memberId) params.set('memberId', memberId);
+
+      if (memberId) {
+        // Returns balance object
+        const balance = await api.get<{ totalSavedTambala: number; memberId: string }>(
+          `/api/savings?${params}`
+        );
+        setState((s) => ({
+          ...s,
+          balanceTambala: balance.totalSavedTambala,
+          isLoading: false,
+          error: null,
+        }));
+      } else {
+        // Returns paginated contribution list
+        const data = await api.get<{ items: ContributionRecord[]; total: number }>(
+          `/api/savings?${params}`
+        );
+        setState({
+          contributions: data.items ?? [],
+          balanceTambala: null,
+          isLoading: false,
+          error: null,
+        });
+      }
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to load savings.';
+      setState((s) => ({ ...s, isLoading: false, error: msg }));
+    }
+  }, [groupId, memberId]);
+
+  useEffect(() => { fetchSavings(); }, [fetchSavings]);
+
+  const logContribution = useCallback(
+    async (
+      targetMemberId: string,
+      amountTambala: number,
+      method: 'CASH' | 'MOBILE_MONEY' | 'CARD',
+      cyclePeriod?: string
+    ) => {
+      await api.post('/api/savings', {
+        groupId,
+        memberId: targetMemberId,
+        amountTambala,
+        method,
+        ...(cyclePeriod ? { cyclePeriod } : {}),
+      });
+      await fetchSavings();
+    },
+    [groupId, fetchSavings]
+  );
+
+  const approveContribution = useCallback(
+    async (contributionId: string, action: 'APPROVE' | 'REJECT', reason?: string) => {
+      await api.patch(`/api/savings/${contributionId}`, {
+        action,
+        ...(reason ? { reason } : {}),
+      });
+      await fetchSavings();
+    },
+    [fetchSavings]
+  );
 
   return {
-    contributions,
-    balance,
-    savingsHistory: MOCK_SAVINGS_HISTORY,
-    addContribution,
-    verifyContribution,
+    contributions: state.contributions,
+    balanceTambala: state.balanceTambala,
+    isLoading: state.isLoading,
+    error: state.error,
+    logContribution,
+    approveContribution,
+    refresh: fetchSavings,
   };
 }
