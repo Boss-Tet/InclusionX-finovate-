@@ -6,7 +6,32 @@ import { MessageSquare, X, Send, Minus, Loader2 } from 'lucide-react';
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  isTyping?: boolean;
 }
+
+const TypewriterMessage = ({ content, isTyping, onComplete }: { content: string, isTyping?: boolean, onComplete?: () => void }) => {
+  const [displayed, setDisplayed] = useState(isTyping ? '' : content);
+  
+  useEffect(() => {
+    if (!isTyping) {
+      setDisplayed(content);
+      return;
+    }
+    
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayed(content.slice(0, i + 1));
+      i++;
+      if (i >= content.length) {
+        clearInterval(interval);
+        if (onComplete) onComplete();
+      }
+    }, 15);
+    return () => clearInterval(interval);
+  }, [content, isTyping]);
+
+  return <>{displayed}</>;
+};
 
 export const FloatingLandingChat = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,9 +47,9 @@ export const FloatingLandingChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   
-  const systemInstruction = `You are a helpful and welcoming AI assistant for 'VLSA Connect' (Village Savings and Loan Association).
-Explain the system, what it's for, how to register, and the problems it aims to solve (digital transparency, avoiding paper ledgers, helping communities access formal loans through health scores, tamper-evident ledgers via USSD and Mobile Money).
-Be concise, polite, and descriptive.`;
+  const systemInstruction = `You are a helpful and welcoming AI assistant strictly for 'VSLA Connect' (Village Savings and Loan Association).
+SECURITY AND BOUNDARIES: You MUST politely refuse to answer ANY question that is not related to VSLA Connect, savings groups, loans, USSD, or financial inclusion. If asked about general knowledge, math, coding, or anything off-topic, politely say: "I can only answer questions related to VSLA Connect."
+FORMATTING: Your primary goal is to filter and provide precise, bite-sized answers. DO NOT use markdown asterisks (*) for bullet points. Instead, use a simple hyphen (-) or a standard bullet dot (•), and format your lists with clear line breaks. Never output more than 3-4 short sentences or bullet points at a time.`;
 
   // Initial greeting
   useEffect(() => {
@@ -96,12 +121,12 @@ Be concise, polite, and descriptive.`;
 
       if (res.ok) {
         const data = await res.json();
-        setMessages([...newHistory, { role: 'assistant', content: data.reply }]);
+        setMessages([...newHistory, { role: 'assistant', content: data.reply, isTyping: true }]);
       } else {
-        setMessages([...newHistory, { role: 'assistant', content: 'Oops! I had trouble connecting. Please try again.' }]);
+        setMessages([...newHistory, { role: 'assistant', content: 'Oops! I had trouble connecting. Please try again.', isTyping: true }]);
       }
     } catch (err) {
-      setMessages([...newHistory, { role: 'assistant', content: 'Network error. Please try again.' }]);
+      setMessages([...newHistory, { role: 'assistant', content: 'Network error. Please try again.', isTyping: true }]);
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +140,7 @@ Be concise, polite, and descriptive.`;
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 p-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full shadow-2xl hover:scale-105 transition-transform"
+          className="fixed bottom-6 right-6 z-50 p-4 bg-[#0F4C36] hover:bg-[#0c3d2c] text-white rounded-full shadow-2xl hover:scale-105 transition-transform"
         >
           <MessageSquare className="w-6 h-6" />
         </button>
@@ -137,19 +162,26 @@ Be concise, polite, and descriptive.`;
         >
           {/* Header */}
           <div 
-            className="flex items-center justify-between px-4 py-3 bg-emerald-600 text-white cursor-grab active:cursor-grabbing select-none"
+            className="flex items-center justify-between px-5 py-4 bg-white border-b border-slate-100 cursor-grab active:cursor-grabbing select-none"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
           >
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              <h3 className="font-semibold text-sm">VLSA Connect Guide</h3>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-[#E6F0E6] rounded-full flex items-center justify-center">
+                <MessageSquare className="w-4 h-4 text-[#0F4C36]" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-zinc-900">VSLA Connect Guide</h3>
+                <div className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Online
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-1 no-drag">
+            <div className="flex items-center gap-1 no-drag text-zinc-400">
               <button 
                 onClick={() => setIsMinimized(!isMinimized)}
-                className="p-1.5 hover:bg-emerald-500 rounded transition-colors hidden sm:block"
+                className="p-2 hover:bg-slate-100 hover:text-zinc-700 rounded-full transition-colors hidden sm:block"
                 title="Minimize"
               >
                 <Minus className="w-4 h-4" />
@@ -159,7 +191,7 @@ Be concise, polite, and descriptive.`;
                   setIsOpen(false);
                   setIsMinimized(false);
                 }}
-                className="p-1.5 hover:bg-emerald-500 rounded transition-colors"
+                className="p-2 hover:bg-slate-100 hover:text-zinc-700 rounded-full transition-colors"
                 title="Close"
               >
                 <X className="w-4 h-4" />
@@ -170,24 +202,34 @@ Be concise, polite, and descriptive.`;
           {/* Body */}
           {!isMinimized && (
             <>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-950/50 touch-auto">
+              <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-white touch-auto">
                 {messages.map((msg, i) => (
                   <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div 
-                      className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
                         msg.role === 'user' 
-                          ? 'bg-emerald-600 text-white rounded-tr-sm' 
-                          : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-tl-sm'
+                          ? 'bg-[#0F4C36] text-white rounded-tr-sm shadow-sm' 
+                          : 'bg-slate-50 text-zinc-800 rounded-tl-sm border border-slate-100'
                       }`}
                     >
-                      {msg.content}
+                      {msg.role === 'assistant' && msg.isTyping ? (
+                        <TypewriterMessage 
+                          content={msg.content} 
+                          isTyping={true} 
+                          onComplete={() => {
+                            setMessages(prev => prev.map((m, idx) => idx === i ? { ...m, isTyping: false } : m));
+                          }} 
+                        />
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                   </div>
                 ))}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-sm px-4 py-2.5 text-slate-500 flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" /> Thinking...
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-sm px-4 py-3 text-zinc-500 text-sm flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-[#0F4C36]" /> Thinking...
                     </div>
                   </div>
                 )}
@@ -195,21 +237,21 @@ Be concise, polite, and descriptive.`;
               </div>
 
               {/* Input Area */}
-              <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 no-drag">
+              <div className="p-4 bg-white border-t border-slate-100 no-drag">
                 <form onSubmit={sendMessage} className="flex gap-2">
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask about VLSA Connect..."
-                    className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    placeholder="Ask about VSLA Connect..."
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-5 py-2.5 text-sm outline-none focus:border-[#0F4C36] focus:bg-white transition-colors text-zinc-900"
                   />
                   <button
                     type="submit"
                     disabled={!input.trim() || isLoading}
-                    className="p-2.5 bg-emerald-600 text-white rounded-full hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 transition-colors shrink-0"
+                    className="w-11 h-11 flex items-center justify-center bg-[#0F4C36] text-white rounded-full hover:bg-[#0c3d2c] disabled:opacity-50 transition-colors shrink-0 shadow-sm"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-4 h-4 ml-0.5" />
                   </button>
                 </form>
               </div>
