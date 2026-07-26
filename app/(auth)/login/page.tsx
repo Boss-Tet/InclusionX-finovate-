@@ -26,10 +26,7 @@ async function hydrateActiveGroup(): Promise<void> {
 
 /* ─── Validation ───────────────────────────────────────────────── */
 const loginSchema = z.object({
-  phoneNumber: z
-    .string()
-    .min(1, 'Phone number is required')
-    .regex(/^\+\d{7,15}$/, 'Enter phone in E.164 format, e.g. +265991234567'),
+  email: z.string().email('Enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -233,7 +230,7 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { phoneNumber: '+265', password: '' },
+    defaultValues: { email: '', password: '' },
   });
 
   const {
@@ -245,7 +242,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setApiError(null);
     try {
-      const { requires2fa } = await login(data.phoneNumber, data.password);
+      const { requires2fa } = await login(data.email, data.password);
       if (requires2fa) {
         setStep('2fa');
       } else {
@@ -329,17 +326,17 @@ export default function LoginPage() {
         Sign In
       </h1>
       <p className="mb-6 text-[13.5px] leading-relaxed" style={{ color: inkSoft }}>
-        Enter your phone number and password to access your VSLA account.
+        Enter your email and password to access your VSLA account.
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <TextField
-          id="phoneNumber"
-          label="Phone Number"
-          type="tel"
-          placeholder="+265991234567"
-          registration={register('phoneNumber')}
-          error={errors.phoneNumber?.message}
+          id="email"
+          label="Email Address"
+          type="email"
+          placeholder="chifundo@example.com"
+          registration={register('email')}
+          error={errors.email?.message}
         />
 
         <PasswordField

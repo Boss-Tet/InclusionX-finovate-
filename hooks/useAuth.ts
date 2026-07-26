@@ -45,13 +45,13 @@ export function useAuth() {
   }, []);
 
   const login = useCallback(
-    async (phoneNumber: string, password: string): Promise<{ requires2fa: boolean }> => {
+    async (email: string, password: string): Promise<{ requires2fa: boolean }> => {
       setState((s) => ({ ...s, isLoading: true, error: null }));
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber, password }),
+          body: JSON.stringify({ email, password }),
         });
         const json = await res.json();
 

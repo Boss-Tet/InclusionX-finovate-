@@ -46,7 +46,7 @@ export type VerifyPhoneInput = VerifyEmailInput;
 
 // ── Login ─────────────────────────────────────────────────────────────────────
 export const LoginSchema = z.object({
-  phoneNumber: phone,
+  email,     // login identifier — same address used for OTP
   password,
 });
 export type LoginInput = z.infer<typeof LoginSchema>;

@@ -27,16 +27,16 @@ export async function handleLogin(
   input: LoginInput,
   meta: { ipAddress?: string; userAgent?: string }
 ): Promise<ApiResponse<LoginSuccess>> {
-  const { phoneNumber, password } = input;
+  const { email, password } = input;
 
   const user = await db.user.findUnique({
-    where: { phoneNumber },
+    where: { email },
     select: {
       id: true,
       passwordHash: true,
       platformRole: true,
       isActive: true,
-      isPhoneVerified: true,
+      isEmailVerified: true,
       twoFactorEnabled: true,
       failedLoginAttempts: true,
       lockedUntil: true,
@@ -44,11 +44,11 @@ export async function handleLogin(
   });
 
   // Generic error — don't reveal whether the phone exists (prevents enumeration).
-  const INVALID_CREDS = { success: false as const, error: 'Invalid phone number or password.', code: 'INVALID_CREDENTIALS' };
+  const INVALID_CREDS = { success: false as const, error: 'Invalid email or password.', code: 'INVALID_CREDENTIALS' };
 
   if (!user) return INVALID_CREDS;
   if (!user.isActive) return { success: false, error: 'Account is deactivated. Contact support.', code: 'FORBIDDEN' };
-  if (!user.isPhoneVerified) return { success: false, error: 'Phone not verified. Check your SMS.', code: 'PHONE_NOT_VERIFIED' };
+  if (!user.isEmailVerified) return { success: false, error: 'Email not verified. Check your inbox for the verification code.', code: 'EMAIL_NOT_VERIFIED' };
 
   // Brute-force lockout check.
   if (user.lockedUntil && user.lockedUntil > new Date()) {
