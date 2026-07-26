@@ -1,6 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/atoms/Button';
+import { Input } from '@/components/atoms/Input';
+import { HeroJoinForm } from '@/components/atoms/HeroJoinForm/HeroJoinForm';
 import { 
   ArrowRight, Globe, ShieldCheck, TrendingUp, HandCoins, Users 
 } from 'lucide-react';
