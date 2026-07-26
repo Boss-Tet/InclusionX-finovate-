@@ -53,3 +53,6 @@ JABARI_TEAM_NOTE.md
 
 # Automated type check script push
 /scripts/git
+
+# VSLA Connect UI reference images
+ui_reference/*.jpg
