@@ -78,8 +78,8 @@ export const MemberMessagesTemplate: React.FC = () => {
             <span className="bg-black/5 text-[#5B6B65] text-[10.5px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">This Week</span>
           </div>
           
-          {chat.map((msg) => (
-            <div key={msg.id} className={`flex gap-2 md:gap-3 ${msg.from === "me" ? "flex-row-reverse" : "flex-row"}`}>
+            {chat.map((msg) => (
+            <div key={msg.id} className={`flex gap-2 md:gap-3 w-full ${msg.from === "me" ? "flex-row-reverse" : "flex-row"}`}>
               
               {/* Avatar (only for others) */}
               {msg.from === "them" && (
@@ -89,19 +89,19 @@ export const MemberMessagesTemplate: React.FC = () => {
               )}
 
               {/* Message Bubble */}
-              <div className={`flex flex-col ${msg.from === "me" ? "items-end" : "items-start"} max-w-[85%] md:max-w-[70%]`}>
+              <div className={`flex flex-col ${msg.from === "me" ? "items-end" : "items-start"} max-w-[85%] md:max-w-[70%] overflow-hidden`}>
                 
                 {/* Sender Name (only for others) */}
                 {msg.from === "them" && (
                   <span className="text-[11.5px] font-bold text-[#5B6B65] mb-1 ml-1">{msg.sender}</span>
                 )}
 
-                <div className={`rounded-[18px] px-4 py-3 text-[14.5px] shadow-sm leading-relaxed ${
+                <div className={`rounded-[18px] px-4 py-3 text-[14.5px] shadow-sm leading-relaxed overflow-hidden ${
                   msg.from === "me" 
                     ? "bg-[#123A29] text-white rounded-br-[4px]" 
                     : "bg-white text-[#1B2321] border border-[#E9EDEA] rounded-bl-[4px]"
                 }`}>
-                  <p>{msg.text}</p>
+                  <p className="break-words whitespace-pre-wrap [word-break:break-word]">{msg.text}</p>
                 </div>
                 
                 <span className={`text-[10px] font-semibold mt-1 ${msg.from === "me" ? "mr-1 text-[#94A29C]" : "ml-1 text-[#94A29C]"}`}>
@@ -126,28 +126,30 @@ export const MemberMessagesTemplate: React.FC = () => {
               value={inputMsg} 
               onChange={e => {
                 setInputMsg(e.target.value);
-                e.target.style.height = 'auto';
+                e.target.style.height = '40px'; // Reset height briefly to get true scrollHeight
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
               }} 
               onKeyDown={e => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  send();
-                  e.currentTarget.style.height = 'auto';
+                  if (inputMsg.trim()) {
+                    send();
+                    e.currentTarget.style.height = '40px';
+                  }
                 }
               }}
-              className="flex-1 bg-transparent border-none py-2 px-2 mx-1 text-[15px] text-[#1B2321] placeholder-[#94A29C] focus:outline-none focus:ring-0 resize-none max-h-[120px]" 
-              style={{ minHeight: '36px' }}
+              className="flex-1 bg-transparent border-none py-[10px] px-2 mx-1 text-[15px] leading-tight text-[#1B2321] placeholder-[#94A29C] focus:outline-none focus:ring-0 resize-none" 
+              style={{ height: '40px', minHeight: '40px', maxHeight: '120px', overflowY: 'auto' }}
             />
             
             <div className="flex items-center gap-1 shrink-0 pr-1 mb-0.5">
               <button className="w-9 h-9 rounded-full flex items-center justify-center text-[#94A29C] hover:text-[#5B6B65] transition-colors relative overflow-hidden">
-                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*,.pdf,.doc,.docx" />
+                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*,.pdf,.doc,.docx" />
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               </button>
               {!inputMsg.trim() && (
                 <button className="w-9 h-9 rounded-full flex items-center justify-center text-[#94A29C] hover:text-[#5B6B65] transition-colors relative overflow-hidden">
-                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" capture="environment" />
+                  <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" capture="environment" />
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 </button>
               )}
