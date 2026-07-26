@@ -4,70 +4,72 @@ import { Icon, IconName } from "@/components/atoms/Icon/Icon";
 interface NavItemData {
   label: string;
   icon: IconName;
-  active?: boolean;
+  href: string;
   badge?: string;
-  href?: string;
 }
 
 const navItems: NavItemData[] = [
-  { label: "Dashboard", icon: "grid", active: true },
-  { label: "My Group", icon: "users" },
-  { label: "Contributions", icon: "arrow-down-circle" },
-  { label: "Loans", icon: "hand-coin" },
-  { label: "Withdrawals", icon: "arrow-up-circle", badge: "2" },
-  { label: "Savings Goal", icon: "goal" },
-  { label: "Messages", icon: "chat", badge: "3" },
-  { label: "Documents", icon: "doc" },
-  { label: "Profile", icon: "user" },
-  { label: "Support", icon: "support" },
+  { label: "Dashboard",     icon: "grid",             href: "/dashboard" },
+  { label: "My Group",      icon: "users",            href: "/my-group" },
+  { label: "Contributions", icon: "arrow-down-circle",href: "/contributions" },
+  { label: "Loans",         icon: "hand-coin",        href: "/loans" },
+  { label: "Withdrawals",   icon: "arrow-up-circle",  href: "/withdrawals", badge: "2" },
+  { label: "Savings Goal",  icon: "goal",             href: "/savings-goal" },
+  { label: "Messages",      icon: "chat",             href: "/messages",    badge: "3" },
+  { label: "Documents",     icon: "doc",              href: "/documents" },
+  { label: "Profile",       icon: "user",             href: "/profile" },
+  { label: "Support",       icon: "support",          href: "#" },
 ];
 
-export const MemberSidebar: React.FC = () => {
+interface MemberSidebarProps {
+  activePath?: string;
+}
+
+export const MemberSidebar: React.FC<MemberSidebarProps> = ({ activePath = "/dashboard" }) => {
   return (
-    <aside className="w-[246px] shrink-0 bg-gradient-to-b from-[#123A29] to-[#164A34] text-white p-5 px-[14px] flex flex-col min-h-screen">
-      {/* Brand header */}
-      <div className="flex items-center gap-2.5 px-2 pb-5.5">
+    <aside className="w-[246px] shrink-0 bg-gradient-to-b from-[#123A29] to-[#164A34] text-white px-[14px] py-5 flex flex-col h-screen sticky top-0 overflow-y-auto">
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-2 pb-6">
         <div className="w-[34px] h-[34px] rounded-[9px] bg-white/14 flex items-center justify-center shrink-0">
           <Icon name="logo" className="w-[18px] h-[18px] text-white" />
         </div>
         <div>
-          <div className="text-[14.5px] font-extrabold tracking-wide">VLSI CONNECT</div>
+          <div className="text-[14.5px] font-extrabold tracking-wide">VSLA CONNECT</div>
           <div className="text-[9.5px] text-[#9FC7B0] mt-0.5">Save Together, Grow Together</div>
         </div>
       </div>
 
-      {/* Nav list */}
-      <nav className="flex-1">
-        {navItems.map((item) => (
-          <a
-            key={item.label}
-            href={item.href || "#"}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] mb-0.75 text-[13.5px] font-semibold transition-colors ${
-              item.active
-                ? "bg-white text-[#1B5E3F]"
-                : "text-[#C7DED2] hover:bg-white/10 hover:text-white"
-            }`}
-          >
-            <Icon name={item.icon} className="w-[17px] h-[17px] shrink-0" />
-            <span>{item.label}</span>
-            {item.badge && (
-              <span
-                className={`ml-auto text-[10px] font-bold px-1.75 py-0.25 rounded-full text-white ${
-                  item.active ? "bg-[#1B5E3F]" : "bg-[#E8873A]"
-                }`}
-              >
-                {item.badge}
-              </span>
-            )}
-          </a>
-        ))}
+      {/* Nav */}
+      <nav className="flex-1 flex flex-col gap-0.5">
+        {navItems.map((item) => {
+          const isActive = activePath === item.href;
+          return (
+            <a
+              key={item.label}
+              href={item.href}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13.5px] font-semibold transition-all duration-150 ${
+                isActive
+                  ? "bg-white text-[#1B5E3F] shadow-xs"
+                  : "text-[#C7DED2] hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <Icon name={item.icon} className="w-[17px] h-[17px] shrink-0" />
+              <span>{item.label}</span>
+              {item.badge && (
+                <span className={`ml-auto text-[10px] font-extrabold px-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-white ${isActive ? "bg-[#1B5E3F]" : "bg-[#E8873A]"}`}>
+                  {item.badge}
+                </span>
+              )}
+            </a>
+          );
+        })}
       </nav>
 
-      {/* Footer logout */}
+      {/* Footer */}
       <div className="border-t border-white/12 pt-2.5 mt-2">
         <a
-          href="#"
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13.5px] font-semibold text-[#F3A79C] hover:bg-white/10"
+          href="/logout"
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13.5px] font-semibold text-[#F3A79C] hover:bg-white/10 transition-colors"
         >
           <Icon name="logout" className="w-[17px] h-[17px] shrink-0" />
           <span>Logout</span>
