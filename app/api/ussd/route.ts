@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { NotificationsController } from '../../../controllers/notifications/notifications.controller';
+import { NotificationsController } from '@/controllers/notifications/notifications.controller';
 
 export async function POST(req: Request) {
   try {

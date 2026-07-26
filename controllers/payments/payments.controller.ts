@@ -1,4 +1,4 @@
-import { initiatePayment, verifyPayment, InitiatePaymentOptions } from '../../providers/paychangu';
+import { initiatePayment, verifyPayment, InitiatePaymentOptions } from '@/providers/paychangu';
 
 /**
  * Payments Controller

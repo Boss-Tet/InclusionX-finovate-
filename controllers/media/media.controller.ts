@@ -1,4 +1,4 @@
-import { uploadImage } from '../../providers/cloudinary';
+import { uploadImage } from '@/providers/cloudinary';
 
 /**
  * Media Controller

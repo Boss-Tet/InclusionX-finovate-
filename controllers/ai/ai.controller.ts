@@ -1,4 +1,4 @@
-import { generateChatResponse, translateText, ChatMessage } from '../../providers/groq';
+import { generateChatResponse, translateText, ChatMessage } from '@/providers/groq';
 
 /**
  * AI Controller

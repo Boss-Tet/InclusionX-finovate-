@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VLSI Connect — Group Member Dashboard (Desktop)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green-900:#123A29;
+    --green-800:#164A34;
+    --green-700:#1B5E3F;
+    --green-600:#2D7A52;
+    --green-500:#3E9C6C;
+    --green-100:#E3F3EA;
+    --blue-600:#3B7DDB;
+    --blue-100:#E7EFFD;
+    --purple-600:#8B6FC7;
+    --purple-100:#EFE9F9;
+    --orange-600:#E8873A;
+    --orange-100:#FCEADC;
+    --red-600:#DC4B3F;
+    --red-100:#FDEAEA;
+    --gray-500:#9AA6A0;
+    --bg:#F1F4F2;
+    --card:#FFFFFF;
+    --ink:#1B2321;
+    --ink-soft:#5B6B65;
+    --ink-faint:#94A29C;
+    --line:#E9EDEA;
+    --radius-lg:16px;
+    --radius-md:12px;
+    --shadow-card:0 2px 10px rgba(18,58,41,0.05);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  }
+  .icon{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:inline-block;vertical-align:middle;}
+  a{text-decoration:none; color:inherit;}
+
+  /* ===================== APP SHELL ===================== */
+  .app-shell{ display:flex; min-height:100vh;}
+
+  /* ---- Sidebar ---- */
+  .sidebar{
+    width:246px; flex-shrink:0;
+    background:linear-gradient(180deg, var(--green-900), var(--green-800));
+    color:#fff; padding:20px 14px; display:flex; flex-direction:column;
+  }
+  .side-brand{ display:flex; align-items:center; gap:10px; padding:6px 8px 22px;}
+  .side-logo{ width:34px; height:34px; border-radius:9px; background:rgba(255,255,255,0.14); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .side-logo svg{width:18px;height:18px;}
+  .side-brand-name{font-size:14.5px; font-weight:800; letter-spacing:.3px;}
+  .side-brand-tag{font-size:9.5px; color:#9FC7B0; margin-top:1px;}
+
+  .nav-group{flex:1;}
+  .nav-item{
+    display:flex; align-items:center; gap:11px;
+    padding:10px 12px; border-radius:10px; margin-bottom:3px;
+    font-size:13.5px; font-weight:600; color:#C7DED2;
+    position:relative;
+  }
+  .nav-item svg{width:17px;height:17px; flex-shrink:0;}
+  .nav-item.active{ background:#fff; color:var(--green-700);}
+  .nav-badge{
+    margin-left:auto; background:var(--orange-600); color:#fff;
+    font-size:10px; font-weight:700; padding:1px 7px; border-radius:20px;
+  }
+  .nav-item.active .nav-badge{background:var(--green-700);}
+  .nav-footer{ border-top:1px solid rgba(255,255,255,0.12); padding-top:10px; margin-top:8px;}
+  .nav-item.logout{color:#F3A79C;}
+
+  /* ---- Main column ---- */
+  .main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
+
+  .topbar{
+    background:var(--card); border-bottom:1px solid var(--line);
+    padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .welcome-title{font-size:19px; font-weight:800;}
+  .welcome-sub{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .top-right{display:flex; align-items:center; gap:18px;}
+  .lang-select{ display:flex; align-items:center; gap:5px; font-size:13px; font-weight:600; color:var(--ink-soft); border:1px solid var(--line); border-radius:8px; padding:6px 10px;}
+  .lang-select svg{width:12px;height:12px;}
+  .bell-wrap{position:relative; color:var(--ink-soft);}
+  .bell-wrap svg{width:20px;height:20px;}
+  .badge-dot{ position:absolute; top:-6px; right:-7px; background:var(--red-600); color:#fff; font-size:9.5px; font-weight:700; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid #fff;}
+  .user-chip{display:flex; align-items:center; gap:9px;}
+  .user-avatar{ width:36px; height:36px; border-radius:50%; background:var(--green-600); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px;}
+  .user-name{font-size:13px; font-weight:700;}
+  .user-role{font-size:11px; color:var(--ink-faint);}
+
+  .content{padding:24px 28px 40px;}
+
+  /* ---- Stat cards ---- */
+  .stat-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+  .stat-card{ background:var(--card); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); padding:18px;}
+  .stat-icon-sq{ width:40px; height:40px; border-radius:11px; display:flex; align-items:center; justify-content:center; margin-bottom:12px;}
+  .stat-icon-sq svg{width:19px;height:19px;}
+  .stat-icon-sq.blue{background:var(--blue-100); color:var(--blue-600);}
+  .stat-icon-sq.green{background:var(--green-100); color:var(--green-600);}
+  .stat-icon-sq.purple{background:var(--purple-100); color:var(--purple-600);}
+  .stat-num{font-size:20px; font-weight:800;}
+  .stat-name{font-size:12px; color:var(--ink-soft); margin-top:3px; font-weight:500;}
+  .stat-link{ display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:700; color:var(--green-600); margin-top:12px;}
+  .stat-link svg{width:12px;height:12px;}
+
+  /* ---- Cards ---- */
+  .card{ background:var(--card); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); padding:20px;}
+  .card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .card-title{font-size:15px; font-weight:800;}
+  .card-link{font-size:12.5px; font-weight:700; color:var(--green-600);}
+  .mini-select{ font-size:11.5px; font-weight:600; color:var(--ink-soft); display:flex; align-items:center; gap:4px; border:1px solid var(--line); padding:5px 10px; border-radius:8px;}
+  .mini-select svg{width:11px;height:11px;}
+
+  .chart-legend{display:flex; gap:20px; margin-top:8px;}
+  .legend-item{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); font-weight:600;}
+  .legend-swatch{width:16px; height:2.5px; border-radius:2px;}
+  .legend-swatch.dashed{background:repeating-linear-gradient(90deg, var(--gray-500) 0 4px, transparent 4px 7px);}
+
+  .two-col{ display:grid; grid-template-columns:1.15fr 1fr; gap:16px;}
+
+  .list-row{ display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line);}
+  .list-row:last-child{border-bottom:none; padding-bottom:0;}
+  .row-icon{ width:38px; height:38px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .row-icon svg{width:17px;height:17px;}
+  .row-icon.green{background:var(--green-100); color:var(--green-600);}
+  .row-icon.blue{background:var(--blue-100); color:var(--blue-600);}
+  .row-icon.red{background:var(--red-100); color:var(--red-600);}
+  .row-icon.gold{background:#FDF3D9; color:#C99A1E;}
+  .row-body{flex:1; min-width:0;}
+  .row-title{font-size:13px; font-weight:700;}
+  .row-sub{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
+  .row-value{font-size:13px; font-weight:800; white-space:nowrap;}
+  .row-value.pos{color:var(--green-600);}
+  .row-value.neg{color:var(--ink);}
+
+  .pending-row{ display:flex; gap:12px; padding:13px; border-radius:var(--radius-md); border-left:3.5px solid; margin-bottom:12px;}
+  .pending-row:last-child{margin-bottom:0;}
+  .pending-row.orange{ background:var(--orange-100); border-color:var(--orange-600);}
+  .pending-row.blue{ background:var(--blue-100); border-color:var(--blue-600);}
+  .pending-icon{width:34px; height:34px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .pending-icon svg{width:16px;height:16px;}
+  .pending-row.orange .pending-icon{color:var(--orange-600);}
+  .pending-row.blue .pending-icon{color:var(--blue-600);}
+  .pending-title{font-size:13px; font-weight:800;}
+  .pending-sub{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .pending-amount{font-size:12px; font-weight:700; margin-top:5px;}
+  .pending-foot{display:flex; align-items:center; justify-content:space-between; margin-top:9px;}
+  .pending-badge{font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px;}
+  .pending-row.orange .pending-badge{background:#FBDCC0; color:#9A5518;}
+  .pending-row.blue .pending-badge{background:#D3E2FA; color:#1E4C99;}
+  .pending-btn{ border:none; border-radius:8px; padding:6px 13px; font-size:11.5px; font-weight:700; font-family:inherit; color:#fff;}
+  .pending-row.orange .pending-btn{background:var(--green-600);}
+  .pending-row.blue .pending-btn{background:var(--blue-600);}
+
+  /* ---- Group quick info bar ---- */
+  .quick-info-row{ display:flex; gap:16px; align-items:stretch;}
+  .quick-info-card{ flex:2; background:var(--card); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); padding:20px; display:flex; align-items:center; justify-content:space-between;}
+  .qi-item{display:flex; align-items:center; gap:10px;}
+  .qi-icon{width:34px; height:34px; border-radius:9px; background:var(--green-100); color:var(--green-600); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .qi-icon svg{width:16px;height:16px;}
+  .qi-label{font-size:10.5px; color:var(--ink-faint); font-weight:600;}
+  .qi-value{font-size:13px; font-weight:700; margin-top:1px;}
+
+  .next-meeting-card{ flex:1; background:linear-gradient(135deg, var(--green-700), var(--green-900)); color:#fff; border-radius:var(--radius-lg); padding:18px 20px; display:flex; flex-direction:column; justify-content:center; gap:10px;}
+  .nm-label{display:flex; align-items:center; gap:7px; font-size:12px; font-weight:700; color:#BFE1CC;}
+  .nm-label svg{width:14px;height:14px;}
+  .nm-date{font-size:15px; font-weight:800;}
+  .nm-btn{ align-self:flex-start; background:#fff; color:var(--green-700); border:none; border-radius:8px; padding:7px 14px; font-size:12px; font-weight:700; font-family:inherit;}
+
+  .stack{display:flex; flex-direction:column; gap:16px; margin-top:16px;}
+</style>
+</head>
+<body>
+
+<!-- ============== SVG ICON SPRITE ============== -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-logo" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2.5 20c0-3.6 2.9-6.4 6.5-6.4S15.5 16.4 15.5 20"/><circle cx="17" cy="9" r="2.3"/><path d="M17.5 13.6c2.6.4 4.5 2.6 4.5 5.4"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.4 6.5-6.4S15.5 16.4 15.5 20"/><circle cx="17" cy="9" r="2.4"/><path d="M17.5 13.6c2.6.4 4.5 2.6 4.5 5.4"/></symbol>
+    <symbol id="i-arrow-down-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v9"/><path d="M8 12.5l4 4 4-4"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="14" rx="2.3"/><path d="M2.5 10.5h19"/><circle cx="16.5" cy="14.5" r="1.4"/></symbol>
+    <symbol id="i-arrow-up-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 16.5v-9"/><path d="M8 11.5l4-4 4 4"/></symbol>
+    <symbol id="i-goal" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 2.5l9.5 5.2L12 13 2.5 7.7z"/><path d="M2.5 12.3l9.5 5.2 9.5-5.2"/><path d="M2.5 17l9.5 5.2 9.5-5.2"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 01-8.5 8.4 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8A8.4 8.4 0 0112.5 3a8.5 8.5 0 018.5 8.5z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 2.5h8.5L19 7v14.5H6z"/><path d="M9 13h6M9 17h6M9 9h3"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></symbol>
+    <symbol id="i-support" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 116 0c0 2-3 2-3 5"/><circle cx="12" cy="17.5" r="0.6" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13 13 0 010 18M12 3a13 13 0 000 18"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l3 6.6 7 .8-5.2 4.8L18.2 21 12 17.3 5.8 21l1.4-6.3-5.2-4.8 7-.8z"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="17" rx="2.2"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/></symbol>
+    <symbol id="i-vote" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.3l2.8 2.8 5.7-6"/></symbol>
+    <symbol id="i-hand-coin" viewBox="0 0 24 24"><circle cx="8" cy="7" r="3.4"/><path d="M2.5 18c0-3 2.5-5.4 5.5-5.4s5.5 2.4 5.5 5.4"/><path d="M14 15l4.5 1.2c1 .3 1.5 1.4.9 2.2-.5.7-1.4.9-2.2.6l-3.8-1.4"/><path d="M17 13.5l3-1a1.4 1.4 0 011.7 2l-2 1.8"/></symbol>
+    <symbol id="i-hash" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3L7 21M17 3l-3 18"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.5 12.5L12 21l-9-9V4h8z"/><circle cx="7" cy="8" r="1.4" fill="currentColor" stroke="none"/></symbol>
+  </defs>
+</svg>
+
+<div class="app-shell">
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="side-brand">
+      <div class="side-logo"><svg class="icon"><use href="#i-logo"/></svg></div>
+      <div>
+        <div class="side-brand-name">VLSI CONNECT</div>
+        <div class="side-brand-tag">Save Together, Grow Together</div>
+      </div>
+    </div>
+    <nav class="nav-group">
+      <div class="nav-item active"><svg class="icon"><use href="#i-grid"/></svg>Dashboard</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-users"/></svg>My Group</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-arrow-down-circle"/></svg>Contributions</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-hand-coin"/></svg>Loans</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-arrow-up-circle"/></svg>Withdrawals<span class="nav-badge">2</span></div>
+      <div class="nav-item"><svg class="icon"><use href="#i-goal"/></svg>Savings Goal</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-chat"/></svg>Messages<span class="nav-badge">3</span></div>
+      <div class="nav-item"><svg class="icon"><use href="#i-doc"/></svg>Documents</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-user"/></svg>Profile</div>
+      <div class="nav-item"><svg class="icon"><use href="#i-support"/></svg>Support</div>
+    </nav>
+    <div class="nav-footer">
+      <div class="nav-item logout"><svg class="icon"><use href="#i-logout"/></svg>Logout</div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-col">
+    <header class="topbar">
+      <div>
+        <div class="welcome-title">Welcome back, Chisomo 👋</div>
+        <div class="welcome-sub">Here's what's happening in your group today.</div>
+      </div>
+      <div class="top-right">
+        <span class="lang-select">EN <svg class="icon"><use href="#i-chevron-down"/></svg></span>
+        <span class="bell-wrap"><svg class="icon"><use href="#i-bell"/></svg><span class="badge-dot">2</span></span>
+        <div class="user-chip">
+          <div class="user-avatar">CB</div>
+          <div>
+            <div class="user-name">Chisomo Banda</div>
+            <div class="user-role">Member</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- Stat cards -->
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-icon-sq blue"><svg class="icon"><use href="#i-wallet"/></svg></div>
+          <div class="stat-num">MWK 48,750</div>
+          <div class="stat-name">My Savings Balance</div>
+          <div class="stat-link">View details <svg class="icon"><use href="#i-arrow-right"/></svg></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-sq green"><svg class="icon"><use href="#i-users"/></svg></div>
+          <div class="stat-num">MWK 1,245,500</div>
+          <div class="stat-name">Group Total Savings</div>
+          <div class="stat-link">View group <svg class="icon"><use href="#i-arrow-right"/></svg></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-sq blue"><svg class="icon"><use href="#i-arrow-down-circle"/></svg></div>
+          <div class="stat-num">MWK 245,000</div>
+          <div class="stat-name">Total Contributions (This Month)</div>
+          <div class="stat-link">View history <svg class="icon"><use href="#i-arrow-right"/></svg></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-sq purple"><svg class="icon"><use href="#i-layers"/></svg></div>
+          <div class="stat-num">25 Shares</div>
+          <div class="stat-name">My Shares</div>
+          <div class="stat-link">View details <svg class="icon"><use href="#i-arrow-right"/></svg></div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <!-- Contribution overview -->
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Contribution Overview</span>
+            <span class="mini-select">This Month <svg class="icon"><use href="#i-chevron-down"/></svg></span>
+          </div>
+          <svg viewBox="0 0 760 190" width="100%" height="190">
+            <line x1="0" y1="10"  x2="760" y2="10"  stroke="#EEF1EF" stroke-width="1"/>
+            <line x1="0" y1="55"  x2="760" y2="55"  stroke="#EEF1EF" stroke-width="1"/>
+            <line x1="0" y1="100" x2="760" y2="100" stroke="#EEF1EF" stroke-width="1"/>
+            <line x1="0" y1="145" x2="760" y2="145" stroke="#EEF1EF" stroke-width="1"/>
+            <text x="4" y="14"  font-size="10" fill="#94A29C" font-family="Inter">250K</text>
+            <text x="4" y="59"  font-size="10" fill="#94A29C" font-family="Inter">165K</text>
+            <text x="4" y="104" font-size="10" fill="#94A29C" font-family="Inter">85K</text>
+            <text x="4" y="149" font-size="10" fill="#94A29C" font-family="Inter">0</text>
+            <!-- group total dashed gray -->
+            <polyline fill="none" stroke="#B7C2BC" stroke-width="2.5" stroke-dasharray="6 5"
+              points="40,150 140,128 240,120 340,95 440,78 540,58 640,42 730,20"/>
+            <!-- my contributions solid green -->
+            <polyline fill="none" stroke="#2D7A52" stroke-width="3"
+              points="40,150 140,140 240,133 340,120 440,108 540,95 640,78 730,68"/>
+            <g fill="#2D7A52">
+              <circle cx="40" cy="150" r="3.5"/><circle cx="140" cy="140" r="3.5"/><circle cx="240" cy="133" r="3.5"/>
+              <circle cx="340" cy="120" r="3.5"/><circle cx="440" cy="108" r="3.5"/><circle cx="540" cy="95" r="3.5"/>
+              <circle cx="640" cy="78" r="3.5"/><circle cx="730" cy="68" r="3.5"/>
+            </g>
+            <text x="40" y="172" font-size="10" fill="#94A29C" text-anchor="middle" font-family="Inter">1 May</text>
+            <text x="185" y="172" font-size="10" fill="#94A29C" text-anchor="middle" font-family="Inter">5 May</text>
+            <text x="340" y="172" font-size="10" fill="#94A29C" text-anchor="middle" font-family="Inter">15 May</text>
+            <text x="540" y="172" font-size="10" fill="#94A29C" text-anchor="middle" font-family="Inter">25 May</text>
+            <text x="730" y="172" font-size="10" fill="#94A29C" text-anchor="middle" font-family="Inter">31 May</text>
+          </svg>
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-swatch" style="background:#2D7A52"></span>My Contributions</span>
+            <span class="legend-item"><span class="legend-swatch dashed"></span>Group Total</span>
+          </div>
+        </div>
+
+        <!-- Two column: recent transactions / upcoming & pending -->
+        <div class="two-col">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Recent Transactions</span><span class="card-link">View all</span></div>
+            <div class="list-row">
+              <div class="row-icon green"><svg class="icon"><use href="#i-arrow-down-circle"/></svg></div>
+              <div class="row-body"><div class="row-title">Contribution</div><div class="row-sub">Monthly contribution · May 25, 2025 · 09:15 AM</div></div>
+              <div class="row-value pos">+ MWK 25,000</div>
+            </div>
+            <div class="list-row">
+              <div class="row-icon blue"><svg class="icon"><use href="#i-wallet"/></svg></div>
+              <div class="row-body"><div class="row-title">Loan Repayment</div><div class="row-sub">Loan #LN-2025-001 · May 20, 2025 · 10:30 AM</div></div>
+              <div class="row-value neg">- MWK 40,000</div>
+            </div>
+            <div class="list-row">
+              <div class="row-icon red"><svg class="icon"><use href="#i-arrow-up-circle"/></svg></div>
+              <div class="row-body"><div class="row-title">Withdrawal</div><div class="row-sub">School fees · May 18, 2025 · 02:45 PM</div></div>
+              <div class="row-value neg">- MWK 15,000</div>
+            </div>
+            <div class="list-row">
+              <div class="row-icon gold"><svg class="icon"><use href="#i-star"/></svg></div>
+              <div class="row-body"><div class="row-title">Bonus</div><div class="row-sub">End of month bonus · May 15, 2025 · 11:20 AM</div></div>
+              <div class="row-value pos">+ MWK 3,750</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="card-title">Upcoming &amp; Pending</span></div>
+            <div class="pending-row orange">
+              <div class="pending-icon"><svg class="icon"><use href="#i-arrow-up-circle"/></svg></div>
+              <div style="flex:1">
+                <div class="pending-title">Withdrawal Vote</div>
+                <div class="pending-sub">School building fund · Requested by: Grace M.</div>
+                <div class="pending-amount">Amount: MWK 120,000</div>
+                <div class="pending-foot">
+                  <span class="pending-badge">Pending</span>
+                  <button class="pending-btn">Vote Now</button>
+                </div>
+              </div>
+            </div>
+            <div class="pending-row blue">
+              <div class="pending-icon"><svg class="icon"><use href="#i-doc"/></svg></div>
+              <div style="flex:1">
+                <div class="pending-title">Loan Request</div>
+                <div class="pending-sub">Business capital · Requested by: Kondwani B.</div>
+                <div class="pending-amount">Amount: MWK 200,000</div>
+                <div class="pending-foot">
+                  <span class="pending-badge">Pending</span>
+                  <button class="pending-btn">Review</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group quick info + next meeting -->
+        <div class="quick-info-row">
+          <div class="quick-info-card">
+            <div class="qi-item">
+              <div class="qi-icon"><svg class="icon"><use href="#i-tag"/></svg></div>
+              <div><div class="qi-label">Group Name</div><div class="qi-value">Tikondane VSLA</div></div>
+            </div>
+            <div class="qi-item">
+              <div class="qi-icon"><svg class="icon"><use href="#i-hash"/></svg></div>
+              <div><div class="qi-label">Group Code</div><div class="qi-value">TVS-2025-001</div></div>
+            </div>
+            <div class="qi-item">
+              <div class="qi-icon"><svg class="icon"><use href="#i-calendar"/></svg></div>
+              <div><div class="qi-label">Meeting Day</div><div class="qi-value">Every Sunday</div></div>
+            </div>
+            <div class="qi-item">
+              <div class="qi-icon"><svg class="icon"><use href="#i-vote"/></svg></div>
+              <div><div class="qi-label">Group Type</div><div class="qi-value">Chilimba</div></div>
+            </div>
+            <div class="qi-item">
+              <div class="qi-icon"><svg class="icon"><use href="#i-users"/></svg></div>
+              <div><div class="qi-label">Members</div><div class="qi-value">25 Members</div></div>
+            </div>
+          </div>
+          <div class="next-meeting-card">
+            <div class="nm-label"><svg class="icon"><use href="#i-calendar"/></svg>Next Meeting</div>
+            <div class="nm-date">Sunday, 1 June 2025 · 2:00 PM</div>
+            <button class="nm-btn">View Agenda</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

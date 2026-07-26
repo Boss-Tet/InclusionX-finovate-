@@ -33,6 +33,7 @@ yarn-error.log*
 # env files — ignore all real secrets, but track the example template
 .env
 .env.local
+.env.dev
 .env.development.local
 .env.test.local
 .env.production.local
@@ -44,3 +45,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# VSLA Connect SRS document and jabari backend task tracker files
+VSLA Connect - SRS v1.1-2.docx
+JABARI_TASK_TRACKER.md
+JABARI_BACKEND_TASKS.md
+JABARI_TEAM_NOTE.md
+
+# Automated type check script push
+/scripts/git
+
+# VSLA Connect UI reference images
+ui_reference/files
+ui_reference/*.jpg
