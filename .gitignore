@@ -56,4 +56,5 @@ JABARI_TEAM_NOTE.md
 /scripts/git
 
 # VSLA Connect UI reference images
+ui_reference/files
 ui_reference/*.jpg

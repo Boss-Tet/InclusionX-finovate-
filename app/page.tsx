@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/atoms/Button';
 import { Input } from '@/components/atoms/Input';
+import { HeroJoinForm } from '@/components/atoms/HeroJoinForm/HeroJoinForm';
 import { 
   Search, Phone, ArrowRight, Play, Camera, ChevronRight, 
   Globe, ShieldCheck, TrendingUp, HandCoins, Users, CreditCard
@@ -58,16 +59,7 @@ export default function Home() {
             <p className="text-base sm:text-lg opacity-90 mb-8 max-w-md font-light leading-relaxed">
               Whether you are pooling resources or building a health score for bank loans, your financial journey starts here.
             </p>
-            <form className="flex bg-white/10 backdrop-blur-md border border-white/20 rounded-full p-1.5 max-w-sm" onSubmit={(e) => e.preventDefault()}>
-              <input 
-                type="text" 
-                placeholder="Enter Group Invite Code..." 
-                className="flex-1 bg-transparent text-white text-sm px-4 py-2 outline-none placeholder:text-white/60" 
-              />
-              <Button type="submit" variant="primary" className="rounded-full bg-white text-emerald-900 hover:bg-emerald-50 font-bold px-6">
-                Join Group
-              </Button>
-            </form>
+            <HeroJoinForm />
           </div>
 
           {/* Explore more */}
