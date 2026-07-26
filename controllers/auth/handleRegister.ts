@@ -1,17 +1,17 @@
 // =============================================================================
 // controllers/auth/handleRegister.ts
-// Owned by: Jabari (helping Orama)
 //
 // POST /api/auth/register
-// Creates a new User, then sends a 6-digit SMS OTP for phone verification.
-// Does NOT log the user in — they must verify their phone first.
+// Creates a new User, then sends a 6-digit OTP to the user's EMAIL address
+// for verification. Does NOT log the user in — they must verify email first.
+// Phone number is stored if provided but is NOT the OTP delivery channel.
 // =============================================================================
 
 import db from '@/lib/db';
 import { hashPassword } from '@/services/auth/hashPassword';
 import { generateOtp } from '@/services/auth/generateOtp';
 import { hashOtp } from '@/services/auth/hashOtp';
-import { sendPhoneOtp } from '@/services/auth/sendPhoneOtp';
+import { sendEmailOtp } from '@/services/auth/sendEmailOtp';
 import { RegisterInput } from '@/lib/validations/auth';
 import { ApiResponse } from '@/types/financial';
 
@@ -21,23 +21,37 @@ export async function handleRegister(
   input: RegisterInput,
   ipAddress?: string
 ): Promise<ApiResponse<{ message: string }>> {
-  const { phoneNumber, fullName, password, preferredLang } = input;
+  const { email, fullName, password, preferredLang } = input;
+  // Normalise: treat empty string or undefined as null (avoids unique-index collision on "")
+  const phoneNumber: string | null = input.phoneNumber && input.phoneNumber.trim() !== '' ? input.phoneNumber : null;
 
-  // Check phone uniqueness.
-  const existing = await db.user.findUnique({
-    where: { phoneNumber },
+  // Check email uniqueness.
+  const existingEmail = await db.user.findUnique({
+    where: { email },
     select: { id: true },
   });
-  if (existing) {
-    return { success: false, error: 'This phone number is already registered.', code: 'CONFLICT' };
+  if (existingEmail) {
+    return { success: false, error: 'This email address is already registered.', code: 'CONFLICT' };
+  }
+
+  // Check phone uniqueness if provided.
+  if (phoneNumber) {
+    const existingPhone = await db.user.findUnique({
+      where: { phoneNumber },
+      select: { id: true },
+    });
+    if (existingPhone) {
+      return { success: false, error: 'This phone number is already registered.', code: 'CONFLICT' };
+    }
   }
 
   const passwordHash = await hashPassword(password);
 
-  // Create user — phone is NOT yet verified.
+  // Create user — email is NOT yet verified.
   const user = await db.user.create({
     data: {
-      phoneNumber,
+      email,
+      phoneNumber: phoneNumber ?? null,
       fullName,
       passwordHash,
       preferredLang,
@@ -45,7 +59,7 @@ export async function handleRegister(
     select: { id: true },
   });
 
-  // Generate & store phone verification OTP.
+  // Generate & store email verification OTP.
   const otp = generateOtp();
   const otpHash = await hashOtp(otp);
 
@@ -58,13 +72,13 @@ export async function handleRegister(
     },
   });
 
-  // Send OTP via Africa's Talking SMS (logs in dev).
-  await sendPhoneOtp(phoneNumber, otp);
+  // Send OTP via email (logs in dev).
+  await sendEmailOtp(email, otp);
 
   return {
     success: true,
     data: {
-      message: `Account created. A 6-digit verification code has been sent to ${phoneNumber}.`,
+      message: `Account created. A 6-digit verification code has been sent to ${email}.`,
     },
   };
 }

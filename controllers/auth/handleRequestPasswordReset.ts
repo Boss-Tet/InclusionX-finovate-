@@ -1,16 +1,15 @@
 // =============================================================================
 // controllers/auth/handleRequestPasswordReset.ts
-// Owned by: Jabari (helping Orama)
 //
 // POST /api/auth/password-reset/request
-// Sends a 6-digit OTP to the user's phone for password reset.
-// Always returns success to prevent phone number enumeration.
+// Sends a 6-digit OTP to the user's EMAIL for password reset.
+// Always returns success to prevent email enumeration.
 // =============================================================================
 
 import db from '@/lib/db';
 import { generateOtp } from '@/services/auth/generateOtp';
 import { hashOtp } from '@/services/auth/hashOtp';
-import { sendPasswordResetOtp } from '@/services/auth/sendPasswordResetOtp';
+import { sendEmailOtp } from '@/services/auth/sendEmailOtp';
 import { RequestPasswordResetInput } from '@/lib/validations/auth';
 import { ApiResponse } from '@/types/financial';
 
@@ -20,19 +19,19 @@ export async function handleRequestPasswordReset(
   input: RequestPasswordResetInput,
   ipAddress?: string
 ): Promise<ApiResponse<{ message: string }>> {
-  const { phoneNumber } = input;
+  const { email } = input;
 
   const GENERIC_OK = {
     success: true as const,
-    data: { message: 'If this number is registered, a reset code has been sent.' },
+    data: { message: 'If this email is registered, a reset code has been sent.' },
   };
 
   const user = await db.user.findUnique({
-    where: { phoneNumber },
+    where: { email },
     select: { id: true, isActive: true },
   });
 
-  // Always return OK — prevent phone enumeration.
+  // Always return OK — prevent email enumeration.
   if (!user || !user.isActive) return GENERIC_OK;
 
   const otp = generateOtp();
@@ -47,7 +46,8 @@ export async function handleRequestPasswordReset(
     },
   });
 
-  await sendPasswordResetOtp(phoneNumber, otp);
+  // Send OTP via email (logs in dev).
+  await sendEmailOtp(email, otp);
 
   return GENERIC_OK;
 }

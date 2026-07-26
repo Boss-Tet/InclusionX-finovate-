@@ -12,9 +12,12 @@ import { ApiError } from '@/lib/api/client';
 /* ─── Validation ───────────────────────────────────────────────── */
 const registerSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters').max(255),
+  email: z.string().email('Enter a valid email address'),
   phoneNumber: z
     .string()
-    .regex(/^\+\d{7,15}$/, 'Enter phone in E.164 format, e.g. +265991234567'),
+    .regex(/^\+\d{7,15}$/, 'Enter phone in E.164 format, e.g. +265991234567')
+    .optional()
+    .or(z.literal('')),
   password: z.string().min(8, 'Password must be at least 8 characters').max(72),
   preferredLang: z.enum(['en', 'ny']),
 });
@@ -183,7 +186,7 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
 export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState<'details' | 'otp' | 'done'>('details');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [otpValue, setOtpValue] = useState('');
   const [otpError, setOtpError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -193,7 +196,7 @@ export default function RegisterPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } =
     useForm<RegisterFormData>({
       resolver: zodResolver(registerSchema),
-      defaultValues: { fullName: '', phoneNumber: '+265', password: '', preferredLang: 'en' as const },
+      defaultValues: { fullName: '', email: '', phoneNumber: '', password: '', preferredLang: 'en' as const },
     });
 
   /* ── Step 1: Register ── */
@@ -201,13 +204,21 @@ export default function RegisterPage() {
     if (!agreedToTerms) { setApiError('Please agree to Terms & Privacy Policy.'); return; }
     setApiError(null);
     try {
+      const payload = {
+        fullName: data.fullName,
+        email: data.email,
+        password: data.password,
+        preferredLang: data.preferredLang,
+        // only send phone if the user typed one
+        ...(data.phoneNumber && data.phoneNumber.trim() !== '' ? { phoneNumber: data.phoneNumber } : {}),
+      };
       const res = await fetch('/api/auth/register', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!json.success) { setApiError(typeof json.error === 'string' ? json.error : 'Registration failed.'); return; }
-      setPhoneNumber(data.phoneNumber);
+      setUserEmail(data.email);
       setStep('otp');
     } catch { setApiError('Network error. Please check your connection.'); }
   };
@@ -220,7 +231,7 @@ export default function RegisterPage() {
     try {
       const res = await fetch('/api/auth/verify-phone', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber, otp: otpValue }),
+        body: JSON.stringify({ email: userEmail, otp: otpValue }),
       });
       const json = await res.json();
       if (!json.success) { setOtpError(typeof json.error === 'string' ? json.error : 'Invalid OTP.'); return; }
@@ -254,8 +265,8 @@ export default function RegisterPage() {
       <AuthShell panel="verify">
         <h1 className="mb-1.5 text-[25px] font-extrabold" style={{ color: inkColor }}>Verify Code</h1>
         <p className="mb-6 text-[13.5px] leading-relaxed" style={{ color: inkSoft }}>
-          Please enter the code we just sent to{' '}
-          <strong style={{ color: inkColor, fontWeight: 700 }}>{phoneNumber}</strong>
+          Please enter the 6-digit code we just sent to{' '}
+          <strong style={{ color: inkColor, fontWeight: 700 }}>{userEmail}</strong>
         </p>
 
         <p className="mb-2.5 text-[13px] font-semibold" style={{ color: inkColor }}>Code *</p>
@@ -271,7 +282,7 @@ export default function RegisterPage() {
         </button>
 
         <p className="mt-5 text-center text-[13px]" style={{ color: inkSoft }}>
-          Didn&apos;t receive code?{' '}
+          Didn&apos;t receive the email?{' '}
           <button type="button" onClick={() => { setStep('details'); setOtpValue(''); setOtpError(null); }}
             className="font-bold underline" style={{ color: brandGreen }}>
             Resend Code
@@ -309,7 +320,10 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <TextField id="phoneNumber" label="Phone Number" type="tel" placeholder="+265991234567"
+        <TextField id="email" label="Email Address" type="email" placeholder="chifundo@example.com"
+          registration={register('email')} error={errors.email?.message} />
+
+        <TextField id="phoneNumber" label="Phone Number (optional)" type="tel" placeholder="+265991234567"
           registration={register('phoneNumber')} error={errors.phoneNumber?.message} />
 
         <PasswordField id="password" label="Password" placeholder="At least 8 characters"

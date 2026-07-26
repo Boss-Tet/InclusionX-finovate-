@@ -1,33 +1,34 @@
 // =============================================================================
 // controllers/auth/handleVerifyPhone.ts
-// Owned by: Jabari (helping Orama)
+// (Now handles email OTP verification — name kept for backward compatibility
+//  with the existing route handler at /api/auth/verify-phone)
 //
 // POST /api/auth/verify-phone
-// Verifies the 6-digit SMS OTP sent during registration.
-// On success: marks User.isPhoneVerified = true.
+// Verifies the 6-digit OTP sent to the user's EMAIL during registration.
+// On success: marks User.isEmailVerified = true.
 // =============================================================================
 
 import db from '@/lib/db';
 import { hashOtp, otpHashesMatch } from '@/services/auth/hashOtp';
-import { VerifyPhoneInput } from '@/lib/validations/auth';
+import { VerifyEmailInput } from '@/lib/validations/auth';
 import { ApiResponse } from '@/types/financial';
 
 const MAX_ATTEMPTS = 3;
 
 export async function handleVerifyPhone(
-  input: VerifyPhoneInput
+  input: VerifyEmailInput
 ): Promise<ApiResponse<{ message: string }>> {
-  const { phoneNumber, otp } = input;
+  const { email, otp } = input;
 
   const user = await db.user.findUnique({
-    where: { phoneNumber },
-    select: { id: true, isPhoneVerified: true },
+    where: { email },
+    select: { id: true, isEmailVerified: true },
   });
   if (!user) {
     return { success: false, error: 'User not found.', code: 'NOT_FOUND' };
   }
-  if (user.isPhoneVerified) {
-    return { success: false, error: 'Phone number is already verified.', code: 'INVALID_STATE' };
+  if (user.isEmailVerified) {
+    return { success: false, error: 'Email is already verified.', code: 'INVALID_STATE' };
   }
 
   // Find the latest unconsumed OTP for this user.
@@ -52,7 +53,6 @@ export async function handleVerifyPhone(
   const matches = otpHashesMatch(incomingHash, record.otpHash);
 
   if (!matches) {
-    // Increment attempt counter.
     await db.passwordResetOtp.update({
       where: { id: record.id },
       data: { attempts: { increment: 1 } },
@@ -65,7 +65,7 @@ export async function handleVerifyPhone(
     };
   }
 
-  // Mark OTP consumed + phone verified atomically.
+  // Mark OTP consumed + email verified atomically.
   await db.$transaction([
     db.passwordResetOtp.update({
       where: { id: record.id },
@@ -73,9 +73,9 @@ export async function handleVerifyPhone(
     }),
     db.user.update({
       where: { id: user.id },
-      data: { isPhoneVerified: true },
+      data: { isEmailVerified: true },
     }),
   ]);
 
-  return { success: true, data: { message: 'Phone number verified. You can now log in.' } };
+  return { success: true, data: { message: 'Email verified. You can now log in.' } };
 }

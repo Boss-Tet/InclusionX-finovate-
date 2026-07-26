@@ -20,10 +20,10 @@ const MAX_ATTEMPTS = 3;
 export async function handleResetPassword(
   input: ResetPasswordInput
 ): Promise<ApiResponse<{ message: string }>> {
-  const { phoneNumber, otp, newPassword } = input;
+  const { email, otp, newPassword } = input;
 
   const user = await db.user.findUnique({
-    where: { phoneNumber },
+    where: { email },
     select: { id: true },
   });
   if (!user) {

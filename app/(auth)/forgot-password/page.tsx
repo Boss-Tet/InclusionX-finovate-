@@ -10,9 +10,7 @@ import { AuthShell } from '@/components/templates/AuthShell';
 
 /* ─── Validation ───────────────────────────────────────────────── */
 const requestSchema = z.object({
-  phoneNumber: z
-    .string()
-    .regex(/^\+\d{7,15}$/, 'Enter phone in E.164 format, e.g. +265991234567'),
+  email: z.string().email('Enter a valid email address'),
 });
 type RequestFormData = z.infer<typeof requestSchema>;
 
@@ -176,7 +174,7 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [step, setStep] = useState<'request' | 'verify' | 'reset' | 'done'>('request');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [userEmail, setUserEmail] = useState('');
   const [otpValue, setOtpValue] = useState('');
   const [otpError, setOtpError] = useState<string | null>(null);
   const [submittingOtp, setSubmittingOtp] = useState(false);
@@ -187,7 +185,7 @@ export default function ForgotPasswordPage() {
     register, handleSubmit, formState: { errors, isSubmitting },
   } = useForm<RequestFormData>({
     resolver: zodResolver(requestSchema),
-    defaultValues: { phoneNumber: '+265' },
+    defaultValues: { email: '' },
   });
 
   /* ── Step 3: Reset ── */
@@ -201,13 +199,13 @@ export default function ForgotPasswordPage() {
     try {
       const res = await fetch('/api/auth/password-reset/request', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: data.phoneNumber }),
+        body: JSON.stringify({ email: data.email }),
       });
       const json = await res.json();
       if (!json.success && res.status === 500) {
         setApiError('Server error. Please try again later.'); return;
       }
-      setPhoneNumber(data.phoneNumber);
+      setUserEmail(data.email);
       setStep('verify');
     } catch { setApiError('Network error. Please check your connection.'); }
   };
@@ -225,7 +223,7 @@ export default function ForgotPasswordPage() {
     try {
       const res = await fetch('/api/auth/password-reset/verify', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber, otp: otpValue, newPassword: data.newPassword }),
+        body: JSON.stringify({ email: userEmail, otp: otpValue, newPassword: data.newPassword }),
       });
       const json = await res.json();
       if (!json.success) {
@@ -285,8 +283,8 @@ export default function ForgotPasswordPage() {
       <AuthShell panel="verify">
         <h1 className="mb-1.5 text-[25px] font-extrabold" style={{ color: inkColor }}>Verify Code</h1>
         <p className="mb-6 text-[13.5px] leading-relaxed" style={{ color: inkSoft }}>
-          Please enter the code we just sent to{' '}
-          <strong style={{ color: inkColor, fontWeight: 700 }}>{phoneNumber}</strong>
+          Please enter the 6-digit code we just sent to{' '}
+          <strong style={{ color: inkColor, fontWeight: 700 }}>{userEmail}</strong>
         </p>
 
         <p className="mb-2.5 text-[13px] font-semibold" style={{ color: inkColor }}>Code *</p>
@@ -302,7 +300,7 @@ export default function ForgotPasswordPage() {
         </button>
 
         <p className="mt-5 text-center text-[13px]" style={{ color: inkSoft }}>
-          Didn&apos;t receive code?{' '}
+          Didn&apos;t receive the email?{' '}
           <button type="button" onClick={() => { setStep('request'); setOtpValue(''); setOtpError(null); setApiError(null); }}
             className="font-bold underline" style={{ color: brandGreen }}>
             Resend Code
@@ -317,12 +315,12 @@ export default function ForgotPasswordPage() {
     <AuthShell panel="forgot">
       <h1 className="mb-1.5 text-[25px] font-extrabold" style={{ color: inkColor }}>Forgot Password?</h1>
       <p className="mb-6 text-[13.5px] leading-relaxed" style={{ color: inkSoft }}>
-        Don&apos;t worry, we&apos;ll send you reset instructions via SMS.
+        Don&apos;t worry, we&apos;ll send a reset code to your email address.
       </p>
 
       <form onSubmit={handleSubmit(onRequest)}>
-        <TextField id="phoneNumber" label="Phone Number" type="tel" placeholder="+265991234567"
-          registration={register('phoneNumber')} error={errors.phoneNumber?.message} />
+        <TextField id="email" label="Email Address" type="email" placeholder="chifundo@example.com"
+          registration={register('email')} error={errors.email?.message} />
 
         {apiError && <ApiErrorBanner message={apiError} />}
 
