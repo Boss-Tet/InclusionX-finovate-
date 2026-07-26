@@ -1,10 +1,23 @@
 import React from 'react';
 import { Bell, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-import { NotificationRecord } from '@/hooks/useNotifications';
+
 import { cn } from '@/lib/utils/cn';
 
+// Compatible with both real API NotificationRecord and mock NotificationRecord
+export interface NotificationDisplay {
+  id: string;
+  title: string;
+  body?: string;       // real API field
+  message?: string;    // mock field
+  timestamp?: string;
+  createdAt?: string;
+  type?: 'INFO' | 'SUCCESS' | 'WARNING' | 'ALERT';
+  channel?: string;
+  read: boolean;
+}
+
 export interface NotificationItemProps {
-  notification: NotificationRecord;
+  notification: NotificationDisplay;
   onMarkRead?: (id: string) => void;
 }
 
@@ -22,18 +35,21 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
           : 'bg-emerald-50/40 border-emerald-200/80 shadow-xs dark:bg-emerald-950/20 dark:border-emerald-800'
       )}
     >
-      <Bell className="w-5 h-5 text-slate-400 shrink-0" />
+      {notification.type === 'SUCCESS' && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />}
+      {notification.type === 'WARNING' && <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />}
+      {notification.type === 'ALERT' && <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />}
+      {(!notification.type || notification.type === 'INFO') && <Bell className="w-5 h-5 text-slate-400 shrink-0" />}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
             {notification.title}
           </h4>
           <span className="text-[11px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
-            {new Date(notification.createdAt).toLocaleDateString()}
+            {notification.timestamp ?? (notification.createdAt ? new Date(notification.createdAt).toLocaleDateString() : '')}
           </span>
         </div>
-        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-2">
-          {notification.body}
+        <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 leading-relaxed">
+          {notification.body ?? notification.message}
         </p>
       </div>
       {!notification.read && (

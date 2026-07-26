@@ -1,11 +1,23 @@
 import React from 'react';
 import { Card } from '@/components/atoms/Card';
 import { Badge } from '@/components/atoms/Badge';
-import { HealthScoreBreakdown } from '@/types/financial';
 import { Activity, ShieldCheck, TrendingUp, Users, Award } from 'lucide-react';
 
+// Accepts both the full HealthScoreBreakdown (from mock/DB) and the
+// simplified HealthSummary returned by GET /api/health-score/[groupId]/trend
+export interface HealthScoreData {
+  score: number;
+  savingsComponent?: number;
+  repaymentComponent?: number;
+  attendanceComponent?: number;
+  governanceComponent?: number;
+  computedAt?: Date | string;
+  trend?: number;
+  label?: string;
+}
+
 export interface HealthScoreChartProps {
-  scoreData: HealthScoreBreakdown;
+  scoreData: HealthScoreData;
   groupName?: string;
 }
 
@@ -25,28 +37,28 @@ export const HealthScoreChart: React.FC<HealthScoreChartProps> = ({
   const metrics = [
     {
       label: 'Savings Compliance',
-      score: scoreData.savingsComponent,
+      score: scoreData.savingsComponent ?? 0,
       max: 35,
       icon: <TrendingUp className="w-4 h-4 text-emerald-600" />,
       color: 'bg-emerald-600',
     },
     {
       label: 'Loan Repayment Rate',
-      score: scoreData.repaymentComponent,
+      score: scoreData.repaymentComponent ?? 0,
       max: 35,
       icon: <ShieldCheck className="w-4 h-4 text-sky-600" />,
       color: 'bg-sky-600',
     },
     {
       label: 'Meeting Attendance',
-      score: scoreData.attendanceComponent,
+      score: scoreData.attendanceComponent ?? 0,
       max: 20,
       icon: <Users className="w-4 h-4 text-amber-600" />,
       color: 'bg-amber-600',
     },
     {
       label: 'Governance & Audit',
-      score: scoreData.governanceComponent,
+      score: scoreData.governanceComponent ?? 0,
       max: 10,
       icon: <Award className="w-4 h-4 text-purple-600" />,
       color: 'bg-purple-600',
@@ -62,7 +74,7 @@ export const HealthScoreChart: React.FC<HealthScoreChartProps> = ({
             Group Credit & Financial Health Score
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {groupName} • Computed on {new Date(scoreData.computedAt).toLocaleDateString()}
+            {groupName}{scoreData.computedAt ? ` • Computed on ${new Date(scoreData.computedAt).toLocaleDateString()}` : ''}
           </p>
         </div>
         <Badge variant={rating.variant} size="md">

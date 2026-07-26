@@ -102,7 +102,7 @@ export default function ChairpersonDashboardPage() {
           email: null,
         }))} />
 
-        <UpcomingMeetings meetings={meetings} onRSVP={(id) => confirmAttendance(id, '')} />
+        <UpcomingMeetings meetings={meetings} onRSVP={(id) => { void confirmAttendance(id, ''); }} />
       </div>
     </ChairpersonShell>
   );

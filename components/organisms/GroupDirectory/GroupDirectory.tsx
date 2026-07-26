@@ -5,6 +5,20 @@ import { Badge } from '@/components/atoms/Badge';
 import { SearchBar } from '@/components/molecules/SearchBar';
 import { Users, Phone, Mail } from 'lucide-react';
 
+// Accepts either live GroupMember (from useGroup) or legacy UserProfile (from mock)
+export interface GroupMemberDisplay {
+  id: string;
+  fullName?: string;
+  name?: string;
+  roleInGroup?: string;
+  role?: string;
+  phoneNumber?: string;
+  phone?: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+  status?: string;
+}
+
 export interface DirectoryMember {
   id: string;
   name: string;
@@ -15,17 +29,23 @@ export interface DirectoryMember {
 }
 
 export interface GroupDirectoryProps {
-  members: DirectoryMember[];
+  members: GroupMemberDisplay[];
 }
 
 export const GroupDirectory: React.FC<GroupDirectoryProps> = ({ members }) => {
   const [query, setQuery] = useState('');
 
   const filtered = members.filter(
-    (m) =>
-      m.name.toLowerCase().includes(query.toLowerCase()) ||
-      m.role.toLowerCase().includes(query.toLowerCase()) ||
-      (m.email || '').toLowerCase().includes(query.toLowerCase())
+    (m) => {
+      const displayName = m.fullName ?? m.name ?? '';
+      const displayRole = m.roleInGroup ?? m.role ?? '';
+      const contact = m.phoneNumber ?? m.phone ?? m.email ?? '';
+      return (
+        displayName.toLowerCase().includes(query.toLowerCase()) ||
+        displayRole.toLowerCase().includes(query.toLowerCase()) ||
+        contact.toLowerCase().includes(query.toLowerCase())
+      );
+    }
   );
 
   return (
@@ -44,19 +64,23 @@ export const GroupDirectory: React.FC<GroupDirectoryProps> = ({ members }) => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((member) => (
+        {filtered.map((member) => {
+          const displayName = member.fullName ?? member.name ?? '';
+          const displayRole = member.roleInGroup ?? member.role ?? '';
+          const contact = member.phoneNumber ?? member.phone ?? '';
+          return (
           <div
             key={member.id}
             className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 dark:bg-slate-800/40 dark:border-slate-800 space-y-3"
           >
             <div className="flex items-center gap-3">
-              <Avatar name={member.name} src={member.avatarUrl || undefined} size="md" />
+              <Avatar name={displayName} src={member.avatarUrl ?? undefined} size="md" />
               <div className="min-w-0 flex-1">
                 <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                  {member.name}
+                  {displayName}
                 </h4>
-                <Badge size="sm" variant={member.role === 'MEMBER' ? 'neutral' : 'emerald'}>
-                  {member.role}
+                <Badge size="sm" variant={displayRole === 'MEMBER' ? 'neutral' : 'emerald'}>
+                  {displayRole}
                 </Badge>
               </div>
             </div>
@@ -66,11 +90,12 @@ export const GroupDirectory: React.FC<GroupDirectoryProps> = ({ members }) => {
                 <Mail className="w-3.5 h-3.5" /> {member.email || 'N/A'}
               </p>
               <p className="flex items-center gap-2 truncate">
-                <Phone className="w-3.5 h-3.5" /> {member.phone}
+                <Phone className="w-3.5 h-3.5" /> {contact}
               </p>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );
