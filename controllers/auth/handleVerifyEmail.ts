@@ -1,9 +1,7 @@
 // =============================================================================
-// controllers/auth/handleVerifyPhone.ts
-// (Now handles email OTP verification — name kept for backward compatibility
-//  with the existing route handler at /api/auth/verify-phone)
+// controllers/auth/handleVerifyEmail.ts
 //
-// POST /api/auth/verify-phone
+// POST /api/auth/verify-email
 // Verifies the 6-digit OTP sent to the user's EMAIL during registration.
 // On success: marks User.isEmailVerified = true.
 // =============================================================================
@@ -15,7 +13,7 @@ import { ApiResponse } from '@/types/financial';
 
 const MAX_ATTEMPTS = 3;
 
-export async function handleVerifyPhone(
+export async function handleVerifyEmail(
   input: VerifyEmailInput
 ): Promise<ApiResponse<{ message: string }>> {
   const { email, otp } = input;

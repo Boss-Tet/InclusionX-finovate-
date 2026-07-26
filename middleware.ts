@@ -37,7 +37,7 @@ const BANK_OFFICER_PATHS = ['/bank-officer', '/admin'];
 const PUBLIC_PATHS = [
   '/',
   '/api/auth/register',
-  '/api/auth/verify-phone',
+  '/api/auth/verify-email',
   '/api/auth/login',
   '/api/auth/2fa/verify',
   '/api/auth/password-reset/request',
