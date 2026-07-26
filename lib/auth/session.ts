@@ -37,15 +37,17 @@ export async function fetchCurrentSession(): Promise<SessionUser | null> {
 
 /**
  * Maps a platform role to its dashboard route.
+ * Route groups like (member), (chairperson) etc. are transparent to the URL —
+ * Next.js resolves them to the path *inside* the group.
  */
 export function roleToDashboardPath(role: string): string {
   const map: Record<string, string> = {
-    MEMBER: '/member/dashboard',
+    MEMBER: '/dashboard',
     CHAIRPERSON: '/chairperson/dashboard',
     TREASURER: '/treasurer/dashboard',
     SECRETARY: '/secretary/dashboard',
     BANK_OFFICER: '/bank-officer/dashboard',
     ADMIN: '/admin/dashboard',
   };
-  return map[role] ?? '/member/dashboard';
+  return map[role] ?? '/dashboard';
 }
